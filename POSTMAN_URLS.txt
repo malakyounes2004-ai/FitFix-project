@@ -1,0 +1,102 @@
+POSTMAN QUICK REFERENCE - FitFix API
+=====================================
+
+BASE URL: http://localhost:3000/api
+
+=====================================
+AUTH ENDPOINTS
+=====================================
+
+1. LOGIN
+   Method: POST
+   URL: http://localhost:3000/api/auth/login
+   Headers: Content-Type: application/json
+   Body: {"email":"admin@gmail.com","password":"admin123"}
+
+2. REGISTER
+   Method: POST
+   URL: http://localhost:3000/api/auth/register
+   Headers: Content-Type: application/json
+   Body: {"email":"user@example.com","password":"password123","displayName":"John Doe","role":"user"}
+
+3. GET PROFILE (Auth)
+   Method: GET
+   URL: http://localhost:3000/api/auth/profile
+   Headers: Authorization: Bearer YOUR_TOKEN
+
+=====================================
+USER ENDPOINTS
+=====================================
+
+4. GET USER PROFILE
+   Method: GET
+   URL: http://localhost:3000/api/user/profile
+   Headers: Authorization: Bearer YOUR_TOKEN
+
+5. GET USER PROGRESS
+   Method: GET
+   URL: http://localhost:3000/api/user/progress
+   Headers: Authorization: Bearer YOUR_TOKEN
+
+6. ADD PROGRESS
+   Method: POST
+   URL: http://localhost:3000/api/user/progress
+   Headers: Authorization: Bearer YOUR_TOKEN
+            Content-Type: application/json
+   Body: {"weight":70,"bodyFat":25,"workoutCompleted":true,"mealPlanFollowed":true}
+
+7. UPDATE PROFILE
+   Method: PATCH
+   URL: http://localhost:3000/api/user/profile
+   Headers: Authorization: Bearer YOUR_TOKEN
+            Content-Type: application/json
+   Body: {"displayName":"John Updated","height":175,"weight":72}
+
+=====================================
+ADMIN ENDPOINTS
+=====================================
+
+8. GET ALL USERS
+   Method: GET
+   URL: http://localhost:3000/api/admin/users
+   Headers: Authorization: Bearer YOUR_ADMIN_TOKEN
+
+9. GET ALL EMPLOYEES
+   Method: GET
+   URL: http://localhost:3000/api/admin/employees
+   Headers: Authorization: Bearer YOUR_ADMIN_TOKEN
+
+10. CREATE EMPLOYEE
+    Method: POST
+    URL: http://localhost:3000/api/admin/employees
+    Headers: Authorization: Bearer YOUR_ADMIN_TOKEN
+             Content-Type: application/json
+    Body: {"email":"coach@fitfix.com","password":"coach123","displayName":"John Coach"}
+
+11. GET DASHBOARD STATS
+    Method: GET
+    URL: http://localhost:3000/api/admin/dashboard/stats
+    Headers: Authorization: Bearer YOUR_ADMIN_TOKEN
+
+12. UPDATE EMPLOYEE STATUS
+    Method: PATCH
+    URL: http://localhost:3000/api/admin/employees/:employeeId/status
+    Example: http://localhost:3000/api/admin/employees/abc123xyz/status
+    Headers: Authorization: Bearer YOUR_ADMIN_TOKEN
+             Content-Type: application/json
+    Body: {"isActive":false}
+
+=====================================
+QUICK TEST WORKFLOW
+=====================================
+
+STEP 1: Login to get token
+POST http://localhost:3000/api/auth/login
+Body: {"email":"admin@gmail.com","password":"admin123"}
+→ Copy the "token" from response
+
+STEP 2: Use token in other requests
+Add header: Authorization: Bearer YOUR_TOKEN_HERE
+
+=====================================
+
