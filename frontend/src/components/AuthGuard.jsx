@@ -103,6 +103,7 @@ const AuthGuard = ({ children }) => {
             if (location.pathname !== '/login' && 
                 location.pathname !== '/contact-admin' && 
                 location.pathname !== '/forgot-password' &&
+                location.pathname !== '/about' &&
                 !location.pathname.startsWith('/employee/payment-success')) {
               navigate('/login', { replace: true });
             }
@@ -114,6 +115,7 @@ const AuthGuard = ({ children }) => {
           if (location.pathname !== '/login' && 
               location.pathname !== '/contact-admin' && 
               location.pathname !== '/forgot-password' &&
+              location.pathname !== '/about' &&
               !location.pathname.startsWith('/employee/payment-success')) {
             navigate('/login', { replace: true });
           }

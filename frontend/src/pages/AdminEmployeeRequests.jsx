@@ -156,26 +156,6 @@ const AdminEmployeeRequests = () => {
           </div>
         </header>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6">
-            <p className="text-sm text-slate-400 mb-1">Total Requests</p>
-            <p className="text-3xl font-bold">{stats.total}</p>
-          </div>
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-6">
-            <p className="text-sm text-amber-400 mb-1">Pending</p>
-            <p className="text-3xl font-bold text-amber-300">{stats.pending}</p>
-          </div>
-          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6">
-            <p className="text-sm text-emerald-400 mb-1">Approved</p>
-            <p className="text-3xl font-bold text-emerald-300">{stats.approved}</p>
-          </div>
-          <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-6">
-            <p className="text-sm text-rose-400 mb-1">Rejected</p>
-            <p className="text-3xl font-bold text-rose-300">{stats.rejected}</p>
-          </div>
-        </div>
-
         {/* Filters */}
         <div className="flex items-center justify-between">
           <div className="flex gap-2">

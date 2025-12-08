@@ -11,10 +11,12 @@ import {
   updateUser,
   deleteUser,
   getDashboardStats,
+  getEmployeeReport,
   sendEmployeeAccountCredentials,
   resetEmployeePassword,
   cleanupOldEmployeePayments
 } from '../controllers/adminController.js';
+import { getReportsOverview, sendEmployeeReportEmail } from '../controllers/reportsController.js';
 import { verifyAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -22,6 +24,7 @@ const router = express.Router();
 // Employee routes
 router.post('/employees', verifyAdmin, createEmployee);
 router.get('/employees', verifyAdmin, getAllEmployees);
+router.get('/employees/:employeeId/report', verifyAdmin, getEmployeeReport);
 router.put('/employees/:uid', verifyAdmin, updateEmployee);
 router.delete('/employees/:uid', verifyAdmin, deleteEmployee);
 router.patch('/employees/:employeeId/status', verifyAdmin, updateEmployeeStatus); // Legacy endpoint
@@ -41,5 +44,9 @@ router.post('/reset-employee-password', verifyAdmin, resetEmployeePassword);
 
 // Cleanup old payments
 router.post('/cleanup-old-payments', verifyAdmin, cleanupOldEmployeePayments);
+
+// Reports endpoints
+router.get('/reports/overview', verifyAdmin, getReportsOverview);
+router.post('/reports/send-email', verifyAdmin, sendEmployeeReportEmail);
 
 export default router;

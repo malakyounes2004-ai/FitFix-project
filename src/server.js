@@ -14,9 +14,11 @@ import notificationRoutes from './routes/notifications.js';
 import paymentRoutes from './routes/payments.js';
 import employeePaymentRoutes from './routes/employeePayments.js';
 import subscriptionRoutes from './routes/subscriptions.js';
+import subscriptionPaymentRoutes from './routes/subscriptionPayments.js';
 import employeeRequestRoutes from './routes/employeeRequests.js';
 import recaptchaRoutes from './routes/recaptcha.js';
 import chatRoutes from './routes/chat.js';
+import mealPlansRoutes from './routes/mealPlans.js';
 
 dotenv.config();
 
@@ -53,9 +55,11 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/employee-payments', employeePaymentRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/subscription-payments', subscriptionPaymentRoutes);
 app.use('/api/employee-requests', employeeRequestRoutes);
 app.use('/api/verify-recaptcha', recaptchaRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/mealPlans', mealPlansRoutes);
 
 // 404 handler
 app.use((req, res) => {

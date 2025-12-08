@@ -1,5 +1,6 @@
 // src/controllers/authController.js
 import fetch from 'node-fetch';
+import admin from 'firebase-admin';
 import { db, auth } from '../firebase.js';
 
 /**
@@ -88,9 +89,21 @@ export async function login(req, res) {
       return res.status(404).json({ success: false, message: 'User profile not found' });
     }
 
+    // Update last login timestamp
+    const lastLoginTimestamp = admin.firestore.Timestamp.now();
+    await db.collection('users').doc(uid).update({
+      lastLogin: lastLoginTimestamp,
+      updatedAt: lastLoginTimestamp
+    });
+
     const userData = userDoc.data();
 
     console.log('✅ Login successful for user:', userData.email);
+    console.log('📅 Last login updated:', lastLoginTimestamp.toDate());
+
+    // Get updated user data including lastLogin
+    const updatedUserDoc = await db.collection('users').doc(uid).get();
+    const updatedUserData = updatedUserDoc.data();
 
     res.json({
       success: true,
@@ -101,7 +114,7 @@ export async function login(req, res) {
         user: {
           uid,
           email: data.email || email,
-          ...userData
+          ...updatedUserData
         }
       }
     });
@@ -155,6 +168,7 @@ export async function register(req, res) {
       displayName: displayName || email.split('@')[0],
       role,
       isActive: true,
+      signupMethod: 'mobile',  // Mark as signed up via mobile app
       createdAt: new Date(),
       updatedAt: new Date(),
       photoURL: null

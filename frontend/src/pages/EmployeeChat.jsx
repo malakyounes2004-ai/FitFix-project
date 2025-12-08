@@ -3,32 +3,10 @@ import axios from 'axios';
 import { FiSend, FiSearch, FiMessageCircle, FiCheck, FiCheckCircle, FiSmile } from 'react-icons/fi';
 import { useNotification } from '../hooks/useNotification';
 import { useTheme } from '../context/ThemeContext';
+import EmployeeSidebar from '../components/EmployeeSidebar';
 // Safely import Firebase - app will work even if Firebase is not configured
-import app from '../config/firebaseClient.js';
-
-let db = null;
-let getFirestore, collection, query, where, orderBy, onSnapshot, doc, onDocSnapshot;
-
-// Initialize Firebase Firestore asynchronously to prevent blocking app load
-(async () => {
-  try {
-    if (app && typeof window !== 'undefined') {
-      const firestoreModule = await import('firebase/firestore');
-      getFirestore = firestoreModule.getFirestore;
-      collection = firestoreModule.collection;
-      query = firestoreModule.query;
-      where = firestoreModule.where;
-      orderBy = firestoreModule.orderBy;
-      onSnapshot = firestoreModule.onSnapshot;
-      doc = firestoreModule.doc;
-      onDocSnapshot = firestoreModule.onSnapshot;
-      db = getFirestore(app);
-      console.log('✅ Firebase Firestore initialized');
-    }
-  } catch (error) {
-    console.warn('⚠️ Firebase Firestore not available, using REST API only:', error.message);
-  }
-})();
+import { db } from '../config/firebaseClient.js';
+import { collection, query, where, orderBy, onSnapshot, doc } from 'firebase/firestore';
 
 // Helper function to generate consistent chatId (matches backend format)
 // Format: admin_{adminId}__emp_{employeeId} | emp_{employeeId}__user_{userId} | admin_{adminId}__user_{userId}
@@ -326,7 +304,7 @@ const EmployeeChat = () => {
     }
 
     const presenceRef = doc(db, 'presence', userId);
-    const unsubscribe = onDocSnapshot(presenceRef, (snapshot) => {
+    const unsubscribe = onSnapshot(presenceRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
         const lastSeen = data.lastSeen?.toDate?.() || new Date();
@@ -358,7 +336,7 @@ const EmployeeChat = () => {
     }
 
     const typingRef = doc(db, 'typing', chatId);
-    const unsubscribe = onDocSnapshot(typingRef, (snapshot) => {
+    const unsubscribe = onSnapshot(typingRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
         const otherParticipantId = selectedChat?.otherParticipant?.uid;
@@ -1093,6 +1071,9 @@ const EmployeeChat = () => {
           ? 'bg-[#111b21] text-white' 
           : 'bg-[#e5ddd5] text-gray-900'
       }`}>
+      {/* Main Navigation Sidebar */}
+      <EmployeeSidebar />
+      
       <div className="flex-1 flex">
         {/* Left Sidebar */}
         <div className={`w-80 border-r ${

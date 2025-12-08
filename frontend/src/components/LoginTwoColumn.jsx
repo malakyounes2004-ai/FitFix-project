@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { gsap } from 'gsap';
 import axios from 'axios';
 import { useNotification } from '../hooks/useNotification';
 
@@ -13,12 +14,22 @@ const LoginTwoColumn = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState('');
-  const [isFormVisible, setIsFormVisible] = useState(false);
   const [isHeroVisible, setIsHeroVisible] = useState(false);
   const navigate = useNavigate();
   const { showNotification } = useNotification();
 
-  // Animation on mount and ensure form is empty
+  // GSAP Refs
+  const containerRef = useRef(null);
+  const cardRef = useRef(null);
+  const logoRef = useRef(null);
+  const headlineRef = useRef(null);
+  const formRef = useRef(null);
+  const emailFieldRef = useRef(null);
+  const passwordFieldRef = useRef(null);
+  const submitBtnRef = useRef(null);
+  const footerRef = useRef(null);
+
+  // GSAP Entrance Animations
   useEffect(() => {
     // Ensure form starts empty every time
     setFormData({
@@ -28,20 +39,96 @@ const LoginTwoColumn = () => {
     setErrors({});
     setApiError('');
     
+    // Show hero image with existing CSS transition
     setTimeout(() => setIsHeroVisible(true), 100);
-    setTimeout(() => setIsFormVisible(true), 300);
+
+    const ctx = gsap.context(() => {
+      // Main timeline
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+      // Initial states
+      gsap.set(cardRef.current, { opacity: 0, scale: 0.95, y: 30 });
+      gsap.set(logoRef.current, { opacity: 0, x: -20 });
+      gsap.set(headlineRef.current, { opacity: 0, y: 20 });
+      gsap.set(formRef.current, { opacity: 0 });
+      gsap.set([emailFieldRef.current, passwordFieldRef.current], { opacity: 0, x: 20 });
+      gsap.set(submitBtnRef.current, { opacity: 0, y: 15 });
+      gsap.set(footerRef.current, { opacity: 0, y: 15 });
+
+      // Card entrance
+      tl.to(cardRef.current, {
+        opacity: 1,
+        scale: 1,
+        y: 0,
+        duration: 0.7,
+        ease: 'back.out(1.2)',
+      });
+
+      // Logo slide in
+      tl.to(logoRef.current, {
+        opacity: 1,
+        x: 0,
+        duration: 0.5,
+      }, '-=0.4');
+
+      // Headline reveal
+      tl.to(headlineRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 0.5,
+      }, '-=0.3');
+
+      // Form fade in
+      tl.to(formRef.current, {
+        opacity: 1,
+        duration: 0.4,
+      }, '-=0.3');
+
+      // Form fields stagger
+      tl.to([emailFieldRef.current, passwordFieldRef.current], {
+        opacity: 1,
+        x: 0,
+        stagger: 0.12,
+        duration: 0.4,
+      }, '-=0.2');
+
+      // Submit button
+      tl.to(submitBtnRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 0.4,
+      }, '-=0.2');
+
+      // Footer
+      tl.to(footerRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 0.4,
+      }, '-=0.2');
+
+      // Logo icon subtle pulse
+      gsap.to(logoRef.current?.querySelector('.logo-icon'), {
+        scale: 1.05,
+        duration: 2,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut',
+        delay: 1.5,
+      });
+
+    }, containerRef);
+
+    return () => ctx.revert();
   }, []);
 
-  // Redirect if already logged in (only if valid token exists)
+  // Redirect if already logged in
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userStr = localStorage.getItem('user');
     
-    // Only redirect if we have both token and valid user data
     if (token && userStr) {
       try {
         const user = JSON.parse(userStr);
-        // Only redirect if user has a valid role
         if (user && user.role) {
           const role = user.role;
           
@@ -53,17 +140,14 @@ const LoginTwoColumn = () => {
           } else if (role === 'user') {
             navigate('/dashboard', { replace: true });
           } else {
-            // Invalid role, clear storage and stay on login
             localStorage.removeItem('token');
             localStorage.removeItem('user');
           }
         } else {
-          // No valid role, clear storage
           localStorage.removeItem('token');
           localStorage.removeItem('user');
         }
       } catch (error) {
-        // Invalid user data, clear storage
         console.error('Error parsing user data:', error);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -85,7 +169,6 @@ const LoginTwoColumn = () => {
       [name]: value
     }));
     
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -94,6 +177,40 @@ const LoginTwoColumn = () => {
     }
     if (apiError) {
       setApiError('');
+    }
+  };
+
+  // Input focus animation
+  const handleInputFocus = (e) => {
+    const field = e.target.closest('.input-field');
+    if (field) {
+      gsap.to(field, {
+        scale: 1.02,
+        duration: 0.2,
+        ease: 'power2.out',
+      });
+      gsap.to(field.querySelector('.input-icon'), {
+        color: '#10b981',
+        scale: 1.1,
+        duration: 0.2,
+      });
+    }
+  };
+
+  // Input blur animation
+  const handleInputBlur = (e) => {
+    const field = e.target.closest('.input-field');
+    if (field) {
+      gsap.to(field, {
+        scale: 1,
+        duration: 0.2,
+        ease: 'power2.out',
+      });
+      gsap.to(field.querySelector('.input-icon'), {
+        color: '#6b7280',
+        scale: 1,
+        duration: 0.2,
+      });
     }
   };
 
@@ -117,12 +234,40 @@ const LoginTwoColumn = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Button hover animation
+  const handleButtonHover = (isEntering) => {
+    if (isLoading) return;
+    
+    if (isEntering) {
+      gsap.to(submitBtnRef.current, {
+        scale: 1.03,
+        y: -2,
+        duration: 0.2,
+        ease: 'power2.out',
+      });
+    } else {
+      gsap.to(submitBtnRef.current, {
+        scale: 1,
+        y: 0,
+        duration: 0.2,
+        ease: 'power2.out',
+      });
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setApiError('');
 
     if (!validateForm()) {
+      // Shake animation for invalid form
+      gsap.to(formRef.current, {
+        x: [-10, 10, -10, 10, 0],
+        duration: 0.4,
+        ease: 'power2.out',
+      });
+      
       if (!formData.email || !formData.password) {
         const msg = 'Please fill in all required fields';
         setApiError(msg);
@@ -133,6 +278,12 @@ const LoginTwoColumn = () => {
       }
       return;
     }
+
+    // Button click animation
+    gsap.to(submitBtnRef.current, {
+      scale: 0.98,
+      duration: 0.1,
+    });
 
     setIsLoading(true);
 
@@ -153,6 +304,13 @@ const LoginTwoColumn = () => {
           localStorage.setItem('user', JSON.stringify(response.data.data.user));
         }
 
+        // Success animation
+        gsap.to(submitBtnRef.current, {
+          scale: 1.05,
+          backgroundColor: '#059669',
+          duration: 0.3,
+        });
+
         showNotification({
           type: 'success',
           message: 'Login successful!'
@@ -161,21 +319,35 @@ const LoginTwoColumn = () => {
         const userRole = response.data.data?.user?.role || 'user';
         const userId = response.data.data?.user?.uid || '';
         
-        setTimeout(() => {
-          if (userRole === 'admin') {
-            navigate('/admin', { replace: true });
-          } else if (userRole === 'employee') {
-            navigate(`/employee/${userId}`, { replace: true });
-          } else {
-            navigate('/dashboard', { replace: true });
+        // Exit animation
+        gsap.to(cardRef.current, {
+          scale: 0.95,
+          opacity: 0,
+          y: -20,
+          duration: 0.4,
+          ease: 'power2.in',
+          onComplete: () => {
+            if (userRole === 'admin') {
+              navigate('/admin', { replace: true });
+            } else if (userRole === 'employee') {
+              navigate(`/employee/${userId}`, { replace: true });
+            } else {
+              navigate('/dashboard', { replace: true });
+            }
           }
-        }, 500);
+        });
       } else {
         const errorMsg = response.data.message || 'Login failed. Please check your credentials.';
         setApiError(errorMsg);
         showNotification({
           type: 'error',
           message: errorMsg
+        });
+        
+        // Error shake
+        gsap.to(formRef.current, {
+          x: [-8, 8, -8, 8, 0],
+          duration: 0.4,
         });
       }
     } catch (error) {
@@ -209,22 +381,46 @@ const LoginTwoColumn = () => {
         type: 'error',
         message: errorMessage
       });
+
+      // Error shake
+      gsap.to(formRef.current, {
+        x: [-8, 8, -8, 8, 0],
+        duration: 0.4,
+      });
     } finally {
       setIsLoading(false);
+      gsap.to(submitBtnRef.current, {
+        scale: 1,
+        duration: 0.2,
+      });
     }
   };
 
+  // Navigate to contact admin with animation
+  const handleContactAdmin = () => {
+    gsap.to(cardRef.current, {
+      x: -30,
+      opacity: 0,
+      duration: 0.3,
+      ease: 'power2.in',
+      onComplete: () => navigate('/contact-admin')
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 sm:p-6 lg:p-8 text-white">
+    <div ref={containerRef} className="min-h-screen bg-black flex items-center justify-center p-4 sm:p-6 lg:p-8 text-white overflow-hidden">
       {/* Two-Column Card Container */}
-      <div className="w-full max-w-6xl bg-black border border-gray-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row">
+      <div 
+        ref={cardRef}
+        className="w-full max-w-6xl bg-black border border-gray-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col lg:flex-row"
+      >
         
         {/* Left Column - Brand Section */}
         <div className="relative w-full lg:w-1/2 bg-gradient-to-br from-black via-gray-900 to-black p-8 lg:p-12 flex flex-col justify-between min-h-[500px] lg:min-h-auto">
           {/* Logo */}
-          <div className="mb-8">
+          <div ref={logoRef} className="mb-8">
             <div className="inline-flex items-center space-x-2">
-              <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+              <div className="logo-icon w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
@@ -234,26 +430,24 @@ const LoginTwoColumn = () => {
           </div>
 
           {/* Headline */}
-          <div className="flex-1 flex items-center">
+          <div ref={headlineRef} className="flex-1 flex items-center">
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight">
               Software which fits your need perfectly
             </h1>
           </div>
 
-          {/* Hero Image - Overlapping */}
+          {/* Hero Image - Static (no GSAP movement) */}
           <div 
             className={`absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/4 lg:translate-x-1/3 transition-all duration-1000 ease-out ${
               isHeroVisible ? 'opacity-100 translate-x-1/4 lg:translate-x-1/3' : 'opacity-0 translate-x-0'
             }`}
           >
             <div className="w-64 h-64 lg:w-80 lg:h-80 rounded-full overflow-hidden shadow-2xl hover:scale-105 transition-transform duration-300 ring-4 ring-white/20">
-              {/* Replace this with your actual hero image */}
               <img 
                 src="/hero-image.png" 
                 alt="Fitness hero illustration" 
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  // Fallback to gradient if image not found
                   e.target.style.display = 'none';
                   e.target.nextElementSibling.style.display = 'flex';
                 }}
@@ -270,7 +464,7 @@ const LoginTwoColumn = () => {
 
         {/* Right Column - Login Form */}
         <div className="w-full lg:w-1/2 bg-black p-8 lg:p-12 flex items-center border-t lg:border-t-0 lg:border-l border-gray-800">
-          <div className={`w-full max-w-md mx-auto transition-all duration-700 ${isFormVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div ref={formRef} className="w-full max-w-md mx-auto">
             {/* Error Message */}
             {apiError && (
               <div className="mb-6 bg-red-500/10 border-l-4 border-red-500 p-4 rounded-r-lg">
@@ -281,13 +475,13 @@ const LoginTwoColumn = () => {
             {/* Login Form */}
             <form onSubmit={handleSubmit} className="space-y-6" noValidate autoComplete="off">
               {/* Email Field */}
-              <div>
+              <div ref={emailFieldRef}>
                 <label htmlFor="email" className="block text-sm font-semibold text-gray-200 mb-2">
                   Email Address
                 </label>
-                <div className="relative">
+                <div className="input-field relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg className="input-icon h-5 w-5 text-gray-500 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
@@ -297,6 +491,8 @@ const LoginTwoColumn = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                     className={`w-full pl-12 pr-4 py-3.5 rounded-xl border-2 transition-all duration-200 ${
                       errors.email
                         ? 'border-red-500/70 focus:ring-2 focus:ring-red-400 focus:border-red-400'
@@ -323,15 +519,15 @@ const LoginTwoColumn = () => {
               </div>
 
               {/* Password Field */}
-              <div>
+              <div ref={passwordFieldRef}>
                 <div className="mb-2">
                   <label htmlFor="password" className="block text-sm font-semibold text-gray-200">
                     Password
                   </label>
                 </div>
-                <div className="relative">
+                <div className="input-field relative">
                   <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg className="input-icon h-5 w-5 text-gray-500 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   </div>
@@ -341,6 +537,8 @@ const LoginTwoColumn = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
+                    onFocus={handleInputFocus}
+                    onBlur={handleInputBlur}
                     className={`w-full pl-12 pr-4 py-3.5 rounded-xl border-2 transition-all duration-200 ${
                       errors.password
                         ? 'border-red-500/70 focus:ring-2 focus:ring-red-400 focus:border-red-400'
@@ -368,12 +566,15 @@ const LoginTwoColumn = () => {
 
               {/* Login Button */}
               <button
+                ref={submitBtnRef}
                 type="submit"
                 disabled={isLoading}
-                className={`w-full py-4 px-6 rounded-xl font-semibold text-white text-base transition-all duration-300 ${
+                onMouseEnter={() => handleButtonHover(true)}
+                onMouseLeave={() => handleButtonHover(false)}
+                className={`w-full py-4 px-6 rounded-xl font-semibold text-white text-base transition-colors duration-300 ${
                   isLoading
                     ? 'bg-emerald-700/60 cursor-not-allowed'
-                    : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]'
+                    : 'bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg hover:shadow-emerald-500/30'
                 } focus:outline-none focus:ring-4 focus:ring-emerald-400 focus:ring-offset-2 focus:ring-offset-black`}
                 aria-label="Sign in to your account"
               >
@@ -391,16 +592,50 @@ const LoginTwoColumn = () => {
               </button>
 
               {/* Contact Admin Text */}
-              <div className="mt-6 pt-6 border-t border-gray-800/70">
+              <div ref={footerRef} className="mt-6 pt-6 border-t border-gray-800/70 space-y-3">
                 <p className="text-center text-sm text-gray-300">
-              Don't have an account?{' '}
+                  Don't have an account?{' '}
                   <button
                     type="button"
-                    onClick={() => navigate('/contact-admin')}
-                className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded px-1"
+                    onClick={handleContactAdmin}
+                    onMouseEnter={(e) => {
+                      gsap.to(e.currentTarget, {
+                        scale: 1.05,
+                        duration: 0.2,
+                      });
+                    }}
+                    onMouseLeave={(e) => {
+                      gsap.to(e.currentTarget, {
+                        scale: 1,
+                        duration: 0.2,
+                      });
+                    }}
+                    className="text-emerald-400 hover:text-emerald-300 font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded px-1"
                     aria-label="Contact admin to create an account"
                   >
-                 Get Account
+                    Get Account
+                  </button>
+                </p>
+                <p className="text-center text-sm text-gray-400">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/about')}
+                    onMouseEnter={(e) => {
+                      gsap.to(e.currentTarget, {
+                        scale: 1.05,
+                        duration: 0.2,
+                      });
+                    }}
+                    onMouseLeave={(e) => {
+                      gsap.to(e.currentTarget, {
+                        scale: 1,
+                        duration: 0.2,
+                      });
+                    }}
+                    className="text-[#15b5ff] hover:text-[#1f36ff] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1"
+                    aria-label="Learn more about FitFix"
+                  >
+                    About FitFix
                   </button>
                 </p>
               </div>
@@ -413,4 +648,3 @@ const LoginTwoColumn = () => {
 };
 
 export default LoginTwoColumn;
-

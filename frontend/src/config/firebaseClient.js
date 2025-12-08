@@ -1,6 +1,6 @@
 // frontend/src/config/firebaseClient.js
 // Firebase Client SDK configuration for frontend
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, RecaptchaVerifier } from 'firebase/auth';
 import { getFirestore, enableIndexedDbPersistence } from 'firebase/firestore';
 
@@ -23,24 +23,45 @@ let db = null;
 try {
   // Check if at least apiKey is provided and not empty
   if (firebaseConfig.apiKey && firebaseConfig.apiKey.trim() !== '') {
-    app = initializeApp(firebaseConfig);
+    // Check if app already exists to avoid re-initialization
+    const existingApps = getApps();
+    if (existingApps.length > 0) {
+      app = existingApps[0];
+    } else {
+      app = initializeApp(firebaseConfig);
+    }
+    
     auth = getAuth(app);
+    
+    // Initialize Firestore - getFirestore is safe to call multiple times, returns same instance
+    // This ensures we only have ONE Firestore instance across the entire app
     db = getFirestore(app);
     
     // Enable IndexedDB persistence for offline support and instant cache
+    // This is optional and non-blocking - if it fails, app still works
     if (typeof window !== 'undefined') {
-      enableIndexedDbPersistence(db).catch((err) => {
-        if (err.code === 'failed-precondition') {
-          console.warn('⚠️ Firestore persistence failed: Multiple tabs open');
-        } else if (err.code === 'unimplemented') {
-          console.warn('⚠️ Firestore persistence not supported in this browser');
-        } else {
-          console.warn('⚠️ Firestore persistence error:', err);
-        }
-      });
+      // Defer to avoid any initialization conflicts
+      setTimeout(() => {
+        enableIndexedDbPersistence(db)
+          .then(() => {
+            console.log('✅ Firestore persistence enabled');
+          })
+          .catch((err) => {
+            // Persistence is optional - don't crash the app
+            if (err.code === 'failed-precondition') {
+              console.warn('⚠️ Firestore persistence: Multiple tabs open. Only one tab can have persistence enabled.');
+            } else if (err.code === 'unimplemented') {
+              console.warn('⚠️ Firestore persistence not supported in this browser');
+            } else {
+              // Log but don't show to user - this is non-critical
+              console.warn('⚠️ Firestore persistence disabled (non-critical):', err.message || err.code || 'Unknown error');
+            }
+            // App continues to work without persistence - we use localStorage as fallback
+          });
+      }, 500); // Small delay to ensure Firestore is fully initialized
     }
     
-    console.log('✅ Firebase initialized successfully with Firestore persistence');
+    console.log('✅ Firebase initialized successfully');
   } else {
     console.warn('⚠️ Firebase config not found. Phone authentication will not work. Please set VITE_FIREBASE_* environment variables.');
     // Create a dummy auth object to prevent import errors
@@ -49,6 +70,7 @@ try {
   }
 } catch (error) {
   console.error('❌ Firebase initialization error:', error);
+  // Don't crash the app - set to null and continue
   auth = null;
   db = null;
 }
@@ -70,6 +92,5 @@ export const setupRecaptcha = (elementId = 'recaptcha-container') => {
   });
 };
 
-export { auth, db };
+export { app, auth, db };
 export default app;
-

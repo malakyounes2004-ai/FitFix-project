@@ -1,7 +1,7 @@
 // src/controllers/adminController.js
 import { auth, db } from '../firebase.js';
 import admin from 'firebase-admin';
-import { sendEmployeeCredentials, sendPasswordResetNotification } from '../utils/emailService.js';
+import { sendEmployeeCredentials, sendPasswordResetNotification, sendEmployeeReport } from '../utils/emailService.js';
 
 /**
  * Create a new employee (Admin only)
@@ -379,10 +379,12 @@ export async function deleteUser(req, res) {
  */
 export async function getDashboardStats(req, res) {
   try {
-    const [employeesSnapshot, usersSnapshot, subscriptionsSnapshot] = await Promise.all([
+    const [employeesSnapshot, usersSnapshot, subscriptionsSnapshot, paymentsSnapshot, employeePaymentsSnapshot] = await Promise.all([
       db.collection('users').where('role', '==', 'employee').get(),
       db.collection('users').where('role', '==', 'user').get(),
-      db.collection('subscriptions').get()
+      db.collection('subscriptions').get(),
+      db.collection('payments').get(),
+      db.collection('employeePayments').where('paid', '==', true).get()
     ]);
 
     const stats = {
@@ -390,15 +392,49 @@ export async function getDashboardStats(req, res) {
       totalUsers: usersSnapshot.size,
       totalSubscriptions: subscriptionsSnapshot.size,
       activeSubscriptions: 0,
-      revenue: 0
+      expiredSubscriptions: 0,
+      expiringSoon: 0,
+      totalRevenue: 0
     };
+
+    // Calculate subscription stats and revenue from subscriptions
+    const now = new Date();
+    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     subscriptionsSnapshot.forEach(doc => {
       const sub = doc.data();
-      if (sub.status === 'active') {
+      const amount = sub.amount || 0;
+      
+      // Add to total revenue (all subscriptions, not just active)
+      stats.totalRevenue += amount;
+      
+      if (sub.status === 'active' && sub.isActive !== false) {
         stats.activeSubscriptions++;
-        stats.revenue += sub.amount || 0;
+        
+        // Check if expiring soon (within 7 days)
+        if (sub.expirationDate) {
+          const expirationDate = sub.expirationDate.toDate ? sub.expirationDate.toDate() : new Date(sub.expirationDate);
+          if (expirationDate <= sevenDaysFromNow && expirationDate > now) {
+            stats.expiringSoon++;
+          }
+        }
+      } else {
+        stats.expiredSubscriptions++;
       }
+    });
+
+    // Add revenue from renewal payments
+    paymentsSnapshot.forEach(doc => {
+      const payment = doc.data();
+      const amount = payment.amount || 0;
+      stats.totalRevenue += amount;
+    });
+
+    // Add revenue from employee payments (initial payments)
+    employeePaymentsSnapshot.forEach(doc => {
+      const payment = doc.data();
+      const amount = payment.amount || 0;
+      stats.totalRevenue += amount;
     });
 
     res.json({
@@ -795,6 +831,319 @@ export async function updateEmployeeStatus(req, res) {
     res.status(500).json({ 
       success: false, 
       message: 'Internal server error' 
+    });
+  }
+}
+
+/**
+ * Get comprehensive employee report (Admin only)
+ * GET /admin/employees/:employeeId/report
+ */
+export async function getEmployeeReport(req, res) {
+  try {
+    const { employeeId } = req.params;
+
+    if (!employeeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee ID is required'
+      });
+    }
+
+    // Get employee basic info
+    const employeeDoc = await db.collection('users').doc(employeeId).get();
+    
+    if (!employeeDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    const employeeData = employeeDoc.data();
+    
+    if (employeeData.role !== 'employee') {
+      return res.status(400).json({
+        success: false,
+        message: 'User is not an employee'
+      });
+    }
+
+    // Get subscription data
+    let subscription = null;
+    let totalPayments = 0;
+    try {
+      // Try by employeeId first
+      let subscriptionSnapshot = await db
+        .collection('subscriptions')
+        .where('employeeId', '==', employeeId)
+        .get();
+
+      // If not found, try by employeeEmail
+      if (subscriptionSnapshot.empty && employeeData.email) {
+        subscriptionSnapshot = await db
+          .collection('subscriptions')
+          .where('employeeEmail', '==', employeeData.email.toLowerCase())
+          .get();
+      }
+
+      if (!subscriptionSnapshot.empty) {
+        // Get the most recent active subscription, or most recent if none active
+        let activeSub = null;
+        let latestSub = null;
+        let latestDate = null;
+
+        subscriptionSnapshot.forEach(doc => {
+          const subData = doc.data();
+          const createdAt = subData.createdAt?.toDate?.() || new Date(0);
+          
+          if (subData.status === 'active' && subData.isActive !== false) {
+            if (!activeSub || createdAt > (activeSub.createdAt?.toDate?.() || new Date(0))) {
+              activeSub = { id: doc.id, ...subData };
+            }
+          }
+          
+          if (!latestSub || createdAt > latestDate) {
+            latestSub = { id: doc.id, ...subData };
+            latestDate = createdAt;
+          }
+          
+          // Sum up payments
+          if (subData.amount) {
+            totalPayments += subData.amount;
+          }
+        });
+
+        const subData = activeSub || latestSub;
+        
+        if (subData) {
+          // Get plan label from selectedPlan key
+          let planName = 'N/A';
+          if (subData.selectedPlan) {
+            const planConfig = {
+              '1month': '1 Month Plan',
+              '2months': '2 Months Plan',
+              '3months': '3 Months Plan',
+              '12months': 'Yearly (12 Months)'
+            };
+            planName = planConfig[subData.selectedPlan] || subData.selectedPlan;
+          } else if (subData.planName) {
+            planName = subData.planName;
+          } else if (subData.planType) {
+            planName = subData.planType;
+          }
+
+          subscription = {
+            planName: planName,
+            duration: subData.duration || subData.days || null,
+            startDate: subData.startDate?.toDate?.()?.toISOString() || subData.startDate || null,
+            expirationDate: subData.expirationDate?.toDate?.()?.toISOString() || subData.expirationDate || null,
+            status: subData.status || (subData.isActive === false ? 'expired' : 'active'),
+            totalPayments: totalPayments || subData.amount || 0
+          };
+        }
+      }
+    } catch (subError) {
+      console.error('Error fetching subscription:', subError);
+    }
+
+    // Get activity data
+    const activity = {
+      usersManaged: 0,
+      mealPlansCreated: 0,
+      workoutPlansCreated: 0,
+      lastLogin: null,
+      chatMessages: 0,
+      totalSessions: 0
+    };
+
+    try {
+      // Count users managed
+      const usersSnapshot = await db
+        .collection('users')
+        .where('assignedEmployeeId', '==', employeeId)
+        .where('role', '==', 'user')
+        .get();
+      activity.usersManaged = usersSnapshot.size;
+
+      // Count meal plans created
+      // Method 1: Count from mealPlans collection
+      const mealPlansSnapshot = await db
+        .collection('mealPlans')
+        .where('assignedBy', '==', employeeId)
+        .get();
+      
+      // Method 2: Count from users collection where mealPlan field exists and assignedBy matches
+      // Get all users assigned to this employee
+      const usersWithMealPlansSnapshot = await db
+        .collection('users')
+        .where('assignedEmployeeId', '==', employeeId)
+        .where('role', '==', 'user')
+        .get();
+      
+      let mealPlansInUsers = 0;
+      usersWithMealPlansSnapshot.forEach(doc => {
+        const userData = doc.data();
+        // Check if user has a mealPlan field with assignedBy matching this employee
+        if (userData.mealPlan && userData.mealPlan.assignedBy === employeeId) {
+          mealPlansInUsers++;
+        }
+      });
+      
+      // Total meal plans = mealPlans collection + mealPlans in users documents
+      activity.mealPlansCreated = mealPlansSnapshot.size + mealPlansInUsers;
+
+      // Count workout plans created
+      const workoutPlansSnapshot = await db
+        .collection('workoutPlans')
+        .where('assignedBy', '==', employeeId)
+        .get();
+      activity.workoutPlansCreated = workoutPlansSnapshot.size;
+
+      // Get last login from employee document or auth metadata
+      if (employeeData.lastLogin) {
+        activity.lastLogin = employeeData.lastLogin?.toDate?.()?.toISOString() || employeeData.lastLogin;
+      }
+
+      // Count chat messages (messages where employee is sender or receiver)
+      const messagesSnapshot = await db
+        .collection('messages')
+        .where('senderId', '==', employeeId)
+        .get();
+      activity.chatMessages = messagesSnapshot.size;
+
+      // Total sessions could be login count or similar - for now use a placeholder
+      // You could track this separately if needed
+      activity.totalSessions = 0;
+    } catch (activityError) {
+      console.error('Error fetching activity data:', activityError);
+    }
+
+    // Get payment history
+    const paymentHistory = [];
+    let totalAmountPaid = 0;
+    
+    try {
+      // 1. Get from employeePayments collection (initial employee payments)
+      // These are payments made when employees sign up for subscriptions
+      let employeePaymentsSnapshot = null;
+      if (employeeData.email) {
+        employeePaymentsSnapshot = await db
+          .collection('employeePayments')
+          .where('email', '==', employeeData.email.toLowerCase())
+          .where('paid', '==', true)
+          .get();
+      } else {
+        employeePaymentsSnapshot = { forEach: () => {}, size: 0 }; // Empty snapshot
+      }
+
+      employeePaymentsSnapshot.forEach(doc => {
+        const payment = doc.data();
+        const amount = payment.amount || 0;
+        totalAmountPaid += amount;
+        paymentHistory.push({
+          date: payment.timestamp?.toDate?.()?.toISOString() || payment.createdAt?.toDate?.()?.toISOString() || payment.createdAt || null,
+          amount: amount,
+          status: 'completed',
+          type: 'Initial Subscription Payment'
+        });
+      });
+
+      // 2. Get from payments collection (renewal payments)
+      // These are subscription renewal payments
+      const paymentsSnapshot = await db
+        .collection('payments')
+        .where('employeeId', '==', employeeId)
+        .orderBy('createdAt', 'desc')
+        .get();
+
+      paymentsSnapshot.forEach(doc => {
+        const payment = doc.data();
+        const amount = payment.amount || 0;
+        totalAmountPaid += amount;
+        paymentHistory.push({
+          date: payment.createdAt?.toDate?.()?.toISOString() || payment.createdAt || null,
+          amount: amount,
+          status: payment.status || 'completed',
+          type: 'Renewal Payment'
+        });
+      });
+
+      // 3. Get from subscriptions (subscription records with payment info)
+      // This ensures we capture all subscription-related payments
+      const subscriptionsSnapshot = await db
+        .collection('subscriptions')
+        .where('employeeId', '==', employeeId)
+        .get();
+
+      let subsByEmail = null;
+      if (subscriptionsSnapshot.empty && employeeData.email) {
+        subsByEmail = await db
+          .collection('subscriptions')
+          .where('employeeEmail', '==', employeeData.email.toLowerCase())
+          .get();
+      }
+
+      const finalSubsSnapshot = subscriptionsSnapshot.empty && subsByEmail ? subsByEmail : subscriptionsSnapshot;
+      
+      finalSubsSnapshot.forEach(doc => {
+        const sub = doc.data();
+        const amount = sub.amount || 0;
+        const paymentDate = sub.paymentDate?.toDate?.()?.toISOString() || sub.createdAt?.toDate?.()?.toISOString() || sub.createdAt || null;
+        
+        // Only add if not already added from employeePayments (avoid duplicates)
+        const existingPayment = paymentHistory.find(p => 
+          p.date === paymentDate && 
+          p.amount === amount &&
+          p.type === 'Initial Subscription Payment'
+        );
+        
+        if (!existingPayment) {
+          totalAmountPaid += amount;
+          paymentHistory.push({
+            date: paymentDate,
+            amount: amount,
+            status: 'completed',
+            type: 'Subscription Payment'
+          });
+        }
+      });
+
+      // Sort by date descending
+      paymentHistory.sort((a, b) => {
+        const dateA = a.date ? new Date(a.date).getTime() : 0;
+        const dateB = b.date ? new Date(b.date).getTime() : 0;
+        return dateB - dateA;
+      });
+
+      console.log(`📊 Payment history for ${employeeData.email}: ${paymentHistory.length} payments found, Total: $${totalAmountPaid}`);
+    } catch (paymentError) {
+      console.error('Error fetching payment history:', paymentError);
+    }
+
+    // Format response
+    const report = {
+      displayName: employeeData.displayName,
+      email: employeeData.email,
+      role: employeeData.role,
+      isActive: employeeData.isActive !== false,
+      createdAt: employeeData.createdAt?.toDate?.()?.toISOString() || employeeData.createdAt || null,
+      phoneNumber: employeeData.phoneNumber || null,
+      subscription: subscription,
+      activity: activity,
+      paymentHistory: paymentHistory,
+      totalAmountPaid: totalAmountPaid
+    };
+
+    res.json({
+      success: true,
+      data: report
+    });
+  } catch (error) {
+    console.error('Get employee report error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error'
     });
   }
 }

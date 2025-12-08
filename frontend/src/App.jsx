@@ -15,12 +15,27 @@ import EmployeeSignup from './pages/EmployeeSignup';
 import EmployeePaymentSuccess from './pages/PaymentSuccess';
 import EmployeeManagement from './pages/EmployeeManagement';
 import Subscriptions from './pages/Subscriptions';
+import AdminSubscriptionPayments from './pages/AdminSubscriptionPayments';
 import AdminEmployeeRequests from './pages/AdminEmployeeRequests';
 import AdminChat from './pages/AdminChat';
 import EmployeeChat from './pages/EmployeeChat';
 import Settings from './pages/Settings';
 import EmployeeSettings from './pages/EmployeeSettings';
 import EmployeeDashboard from './pages/EmployeeDashboard';
+import EmployeeAddUser from './pages/EmployeeAddUser';
+import EmployeeMyUsers from './pages/EmployeeMyUsers';
+import AddMealPlan from './pages/AddMealPlan';
+import MealPlans from './pages/MealPlans';
+import MealPlanManagement from './pages/MealPlanManagement';
+import AddMealPlanContent from './pages/AddMealPlanContent';
+import SelectReadyPlanContent from './pages/SelectReadyPlanContent';
+import ViewUsersPlanContent from './pages/ViewUsersPlanContent';
+import EmployeeExercisesLibrary from './pages/EmployeeExercisesLibrary';
+import EmployeeGymPlans from './pages/EmployeeGymPlans';
+import EmployeeUsersWorkoutPlans from './pages/EmployeeUsersWorkoutPlans';
+import EmployeeSubscriptionRenew from './pages/EmployeeSubscriptionRenew';
+import AboutUs from './pages/AboutUs';
+import RecommendationsReports from './pages/RecommendationsReports';
 
 
 const UserDashboard = () => {
@@ -53,6 +68,7 @@ function App() {
           <Route path="/login" element={<LoginTwoColumn />} />
           <Route path="/login-old" element={<Login />} />
           <Route path="/contact-admin" element={<EmployeeSignup />} />
+          <Route path="/about" element={<AboutUs />} />
           <Route path="/employee/payment-success" element={<EmployeePaymentSuccess />} />
           <Route path="/forgot-password" element={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="text-center"><h1 className="text-2xl font-bold mb-4">Forgot Password</h1><p className="text-gray-600">Feature coming soon</p></div></div>} />
           <Route
@@ -122,6 +138,14 @@ function App() {
             } 
           />
           <Route 
+            path="/admin/payments" 
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminSubscriptionPayments />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
             path="/admin/employee-requests" 
             element={
               <ProtectedRoute requiredRole="admin">
@@ -138,10 +162,10 @@ function App() {
             } 
           />
           <Route 
-            path="/employee/:userId" 
+            path="/admin/reports" 
             element={
-              <ProtectedRoute requiredRole="employee">
-                <EmployeeDashboard />
+              <ProtectedRoute requiredRole="admin">
+                <RecommendationsReports />
               </ProtectedRoute>
             } 
           />
@@ -153,22 +177,130 @@ function App() {
               </ProtectedRoute>
             } 
           />
-                 <Route 
-                   path="/employee/chat" 
-                   element={
-                     <ProtectedRoute requiredRole="employee">
-                       <EmployeeChat />
-                     </ProtectedRoute>
-                   } 
-                 />
-                 <Route 
-                   path="/employee/settings" 
-                   element={
-                     <ProtectedRoute requiredRole="employee">
-                       <EmployeeSettings />
-                     </ProtectedRoute>
-                   } 
-                 />
+          <Route 
+            path="/employee/add-user" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <EmployeeAddUser />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/employee/my-users" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <EmployeeMyUsers />
+              </ProtectedRoute>
+            } 
+          />
+          {/* Meal Plans Section */}
+          <Route 
+            path="/employee/meal-plans/add" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <AddMealPlanContent />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/employee/meal-plans/select" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <SelectReadyPlanContent />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/employee/meal-plans/view" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <ViewUsersPlanContent />
+              </ProtectedRoute>
+            } 
+          />
+          {/* Gym / Workout Plans Section */}
+          <Route 
+            path="/employee/exercises" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <EmployeeExercisesLibrary />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/employee/gym-plans" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <EmployeeGymPlans />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/employee/workout-plans-overview" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <EmployeeUsersWorkoutPlans />
+              </ProtectedRoute>
+            } 
+          />
+          {/* Subscription Renewal */}
+          <Route 
+            path="/employee/renew-subscription" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <EmployeeSubscriptionRenew />
+              </ProtectedRoute>
+            } 
+          />
+          {/* Legacy routes for backward compatibility */}
+          <Route 
+            path="/employee/add-meal-plan" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <AddMealPlan />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/meal-plans" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <MealPlans />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/employee/chat" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <EmployeeChat />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/employee/settings" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <EmployeeSettings />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/employee/:userId/add-user" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <EmployeeAddUser />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/employee/:userId" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <EmployeeDashboard />
+              </ProtectedRoute>
+            } 
+          />
                  <Route 
                    path="/settings" 
                    element={

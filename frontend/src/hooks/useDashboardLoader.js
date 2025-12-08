@@ -164,7 +164,9 @@ export const useDashboardLoader = (type = 'admin', userId = null) => {
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       
       assignedUsers.forEach(user => {
-        if (user.createdAt) {
+        // Only count users who signed up via mobile app (not manually added by employee)
+        const isMobileSignup = !user.signupMethod || user.signupMethod === 'mobile';
+        if (isMobileSignup && user.createdAt) {
           const createdDate = user.createdAt.seconds 
             ? new Date(user.createdAt.seconds * 1000) 
             : new Date(user.createdAt);
@@ -269,21 +271,63 @@ export const useDashboardLoader = (type = 'admin', userId = null) => {
 
   // Setup Firestore realtime listeners
   const setupFirestoreListeners = () => {
+    // Check if db is available and ready
     if (!db) {
       // Fallback to API if Firestore not available
       loadViaAPI();
       return;
     }
 
+    // For now, disable Firestore listeners to avoid state issues
+    // Use API + localStorage cache which already provides instant loading
+    // TODO: Re-enable Firestore listeners once persistence is stable
+    loadViaAPI();
+    return;
+
+    // DISABLED: Firestore realtime listeners (causing state issues)
+    // Uncomment below once Firestore persistence is stable
+    /*
+    // Ensure db is in a valid state before setting up listeners
     try {
-      // Clear previous listeners
-      unsubscribesRef.current.forEach(unsub => unsub());
+      // Test if db is accessible by checking its type
+      if (typeof db === 'undefined' || db === null) {
+        loadViaAPI();
+        return;
+      }
+    } catch (error) {
+      console.warn('Firestore db not ready, using API fallback:', error.message);
+      loadViaAPI();
+      return;
+    }
+
+    try {
+      // Clear previous listeners safely
+      unsubscribesRef.current.forEach(unsub => {
+        try {
+          if (typeof unsub === 'function' && db) {
+            unsub();
+          }
+        } catch (error) {
+          // Ignore errors when cleaning up old listeners
+          console.warn('Error cleaning up old listener (non-critical):', error.message);
+        }
+      });
       unsubscribesRef.current = [];
 
       if (type === 'admin') {
         // Listen to employees
-        const employeesQuery = query(collection(db, 'users'), where('role', '==', 'employee'));
-        const unsubEmployees = onSnapshot(employeesQuery, (snapshot) => {
+        let employeesQuery;
+        try {
+          employeesQuery = query(collection(db, 'users'), where('role', '==', 'employee'));
+        } catch (error) {
+          console.warn('Failed to create employees query, using API fallback:', error.message);
+          loadViaAPI();
+          return;
+        }
+        
+        let unsubEmployees;
+        try {
+          unsubEmployees = onSnapshot(employeesQuery, (snapshot) => {
           const employees = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
           
           // Get other data via API (payments, etc.)
@@ -307,12 +351,33 @@ export const useDashboardLoader = (type = 'admin', userId = null) => {
               return calculated;
             });
           });
+        }, (error) => {
+          console.warn('Employees listener error, falling back to API:', error.message);
+          loadViaAPI();
         });
-        unsubscribesRef.current.push(unsubEmployees);
+        } catch (error) {
+          console.warn('Failed to setup employees listener, using API fallback:', error.message);
+          loadViaAPI();
+          return;
+        }
+        
+        if (unsubEmployees) {
+          unsubscribesRef.current.push(unsubEmployees);
+        }
 
         // Listen to users
-        const usersQuery = query(collection(db, 'users'), where('role', '==', 'user'));
-        const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
+        let usersQuery;
+        try {
+          usersQuery = query(collection(db, 'users'), where('role', '==', 'user'));
+        } catch (error) {
+          console.warn('Failed to create users query, continuing without realtime updates:', error.message);
+          // Continue - we already have employees listener
+        }
+        
+        if (usersQuery) {
+          let unsubUsers;
+          try {
+            unsubUsers = onSnapshot(usersQuery, (snapshot) => {
           const users = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
           setData(prev => {
             const updated = { ...prev, users };
@@ -326,20 +391,38 @@ export const useDashboardLoader = (type = 'admin', userId = null) => {
             saveToCache(calculated);
             return calculated;
           });
+        }, (error) => {
+          console.warn('Users listener error:', error.message);
         });
-        unsubscribesRef.current.push(unsubUsers);
+        } catch (error) {
+          console.warn('Failed to setup users listener:', error.message);
+        }
+        
+        if (unsubUsers) {
+          unsubscribesRef.current.push(unsubUsers);
+        }
 
         // Load payments via API (they might not be in Firestore)
         loadViaAPI();
       } else {
         // Employee dashboard - listen to assigned users
         if (userId) {
-          const usersQuery = query(
-            collection(db, 'users'),
-            where('role', '==', 'user'),
-            where('assignedEmployeeId', '==', userId)
-          );
-          const unsubUsers = onSnapshot(usersQuery, async (snapshot) => {
+          let usersQuery;
+          try {
+            usersQuery = query(
+              collection(db, 'users'),
+              where('role', '==', 'user'),
+              where('assignedEmployeeId', '==', userId)
+            );
+          } catch (error) {
+            console.warn('Failed to create employee users query, using API fallback:', error.message);
+            loadViaAPI();
+            return;
+          }
+          
+          let unsubUsers;
+          try {
+            unsubUsers = onSnapshot(usersQuery, async (snapshot) => {
             const assignedUsers = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
             
             // Fetch progress counts via API
@@ -370,15 +453,30 @@ export const useDashboardLoader = (type = 'admin', userId = null) => {
                 saveToCache(calculated);
               }
             }
+          }, (error) => {
+            console.warn('Employee users listener error, falling back to API:', error.message);
+            loadViaAPI();
           });
-          unsubscribesRef.current.push(unsubUsers);
+          } catch (error) {
+            console.warn('Failed to setup employee users listener, using API fallback:', error.message);
+            loadViaAPI();
+            return;
+          }
+          
+          if (unsubUsers) {
+            unsubscribesRef.current.push(unsubUsers);
+          }
+        } else {
+          // No userId, use API
+          loadViaAPI();
         }
       }
     } catch (error) {
-      console.error('Firestore listener error:', error);
+      console.error('Firestore listener setup error:', error);
       // Fallback to API
       loadViaAPI();
     }
+    */
   };
 
   useEffect(() => {
@@ -389,8 +487,18 @@ export const useDashboardLoader = (type = 'admin', userId = null) => {
 
     return () => {
       isMountedRef.current = false;
-      // Cleanup all listeners
-      unsubscribesRef.current.forEach(unsub => unsub());
+      // Cleanup all listeners safely
+      unsubscribesRef.current.forEach(unsub => {
+        try {
+          // Check if unsubscribe function is valid and db is still available
+          if (typeof unsub === 'function' && db) {
+            unsub();
+          }
+        } catch (error) {
+          // Silently ignore cleanup errors - component is unmounting anyway
+          console.warn('Error cleaning up Firestore listener (non-critical):', error.message);
+        }
+      });
       unsubscribesRef.current = [];
     };
   }, [type, userId]);

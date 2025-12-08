@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FiUser, FiMail, FiLock, FiCamera, FiEdit2, FiTrash2, FiSave, FiX, FiArrowLeft } from 'react-icons/fi';
 import { useNotification } from '../hooks/useNotification';
 import { useTheme } from '../context/ThemeContext';
+import EmployeeSidebar from '../components/EmployeeSidebar';
 
 const EmployeeSettings = () => {
   const { showNotification } = useNotification();
@@ -338,22 +339,27 @@ const EmployeeSettings = () => {
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center transition-colors ${
+      <div className={`min-h-screen flex transition-colors ${
         isDarkMode ? 'bg-[#05050c] text-white' : 'bg-gray-50 text-gray-900'
       }`}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1f36ff] mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading settings...</p>
+        <EmployeeSidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1f36ff] mx-auto mb-4"></div>
+            <p className="text-gray-500">Loading settings...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen transition-colors ${
+    <div className={`min-h-screen flex transition-colors ${
       isDarkMode ? 'bg-[#05050c] text-white' : 'bg-gray-50 text-gray-900'
     }`}>
-      <div className="max-w-7xl mx-auto p-6">
+      <EmployeeSidebar />
+      <div className="flex-1 p-6 overflow-y-auto">
+        <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -743,6 +749,7 @@ const EmployeeSettings = () => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
