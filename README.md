@@ -1,6 +1,3 @@
-# FitFix - Health & Fitness Coaching System
-
-A comprehensive Health & Fitness / Lifestyle Coaching System with role-based access control for Admin, Employee, and User roles.
 
 # FitFix - Health & Fitness Coaching Management System
 
