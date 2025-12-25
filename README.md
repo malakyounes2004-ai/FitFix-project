@@ -1,8 +1,15 @@
+<<<<<<< Updated upstream
 
 # FitFix - Health & Fitness Coaching Management System
 
 <div align="center">
 
+=======
+# FitFix - Health & Fitness Coaching Management System
+
+<div align="center">
+
+>>>>>>> Stashed changes
 ![FitFix](https://img.shields.io/badge/FitFix-Health%20%26%20Fitness-blue)
 ![Node.js](https://img.shields.io/badge/Node.js-18+-green)
 ![React](https://img.shields.io/badge/React-18+-blue)
@@ -373,6 +380,16 @@ Comprehensive API documentation is available in the `doc/` directory:
 - **[Quick Start Guide](./doc/QUICK_START.md)** - Get started in 5 minutes
 - **[Project Report](./doc/PROJECT_REPORT.md)** - Detailed project analysis
 
+<<<<<<< Updated upstream
+=======
+### Database & Architecture Documentation
+
+- **[Database Schema](./doc/DATABASE_SCHEMA.md)** - Complete database structure and schemas
+- **[Database Collections Quick Reference](./doc/DATABASE_COLLECTIONS_QUICK_REFERENCE.md)** - Quick reference for all collections
+- **[Database Diagrams](./doc/DATABASE_DIAGRAMS.md)** - Visual ERD and relationship diagrams (Mermaid)
+- **[Flow Diagrams](./doc/FLOW_DIAGRAMS.md)** - Complete application flow diagrams for all processes
+
+>>>>>>> Stashed changes
 ### Main API Endpoints
 
 - **Authentication**: `/api/auth/*`

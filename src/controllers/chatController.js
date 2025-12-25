@@ -110,10 +110,53 @@ export async function sendMessage(req, res) {
           message: 'Employees can only chat with admin and assigned users'
         });
       }
+    } else if (senderRole === 'user') {
+      // User can chat with their assigned employee or users under the same employee
+      const recipientDoc = await db.collection('users').doc(recipientId).get();
+      if (!recipientDoc.exists) {
+        return res.status(404).json({
+          success: false,
+          message: 'Recipient not found'
+        });
+      }
+
+      // Fetch sender document to get assignedEmployeeId
+      const senderDoc = await db.collection('users').doc(senderId).get();
+      if (!senderDoc.exists) {
+        return res.status(404).json({
+          success: false,
+          message: 'Sender profile not found'
+        });
+      }
+
+      const senderData = senderDoc.data();
+      const recipientData = recipientDoc.data();
+
+      // Case 1: user → own employee (coach)
+      if (
+        recipientData.role === 'employee' &&
+        senderData.assignedEmployeeId === recipientId
+      ) {
+        // Allow - user messaging their assigned coach
+      }
+      // Case 2: user → user under same employee
+      else if (
+        recipientData.role === 'user' &&
+        senderData.assignedEmployeeId &&
+        senderData.assignedEmployeeId === recipientData.assignedEmployeeId
+      ) {
+        // Allow - users under the same coach can chat
+      }
+      else {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only chat with your coach or users under the same coach'
+        });
+      }
     } else {
       return res.status(403).json({
         success: false,
-        message: 'Only admin and employees can send messages'
+        message: 'Only admin, employees, and users can send messages'
       });
     }
 
@@ -385,10 +428,44 @@ export async function createOrGetChat(req, res) {
           message: 'Employees can only chat with admin and assigned users'
         });
       }
+    } else if (currentUserRole === 'user') {
+      // User can chat with their assigned employee or users under the same employee
+      const currentUserDoc = await db.collection('users').doc(currentUserId).get();
+      if (!currentUserDoc.exists) {
+        return res.status(404).json({
+          success: false,
+          message: 'Current user profile not found'
+        });
+      }
+
+      const currentUserData = currentUserDoc.data();
+      const otherUserData = otherUserDoc.data();
+
+      // Case 1: user → own employee (coach)
+      if (
+        otherUserRole === 'employee' &&
+        currentUserData.assignedEmployeeId === otherUserId
+      ) {
+        // Allow - user chatting with their assigned coach
+      }
+      // Case 2: user → user under same employee
+      else if (
+        otherUserRole === 'user' &&
+        currentUserData.assignedEmployeeId &&
+        currentUserData.assignedEmployeeId === otherUserData.assignedEmployeeId
+      ) {
+        // Allow - users under the same coach can chat
+      }
+      else {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only chat with your coach or users under the same coach'
+        });
+      }
     } else {
       return res.status(403).json({
         success: false,
-        message: 'Only admin and employees can create chats'
+        message: 'Only admin, employees, and users can create chats'
       });
     }
 

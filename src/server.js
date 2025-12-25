@@ -19,6 +19,7 @@ import employeeRequestRoutes from './routes/employeeRequests.js';
 import recaptchaRoutes from './routes/recaptcha.js';
 import chatRoutes from './routes/chat.js';
 import mealPlansRoutes from './routes/mealPlans.js';
+import aiRoutes from './routes/ai.js';
 
 dotenv.config();
 
@@ -60,6 +61,7 @@ app.use('/api/employee-requests', employeeRequestRoutes);
 app.use('/api/verify-recaptcha', recaptchaRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/mealPlans', mealPlansRoutes);
+app.use('/api/ai', aiRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -83,7 +85,8 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0',() => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
   console.log(`🚀 FitFix API Server running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/`);
   console.log(`📚 API Base URL: http://localhost:${PORT}/api`);

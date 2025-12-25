@@ -34,6 +34,7 @@ import EmployeeExercisesLibrary from './pages/EmployeeExercisesLibrary';
 import EmployeeGymPlans from './pages/EmployeeGymPlans';
 import EmployeeUsersWorkoutPlans from './pages/EmployeeUsersWorkoutPlans';
 import EmployeeSubscriptionRenew from './pages/EmployeeSubscriptionRenew';
+import EmployeeReportsAndAnalytics from './pages/EmployeeReportsAndAnalytics';
 import AboutUs from './pages/AboutUs';
 import RecommendationsReports from './pages/RecommendationsReports';
 
@@ -282,6 +283,14 @@ function App() {
             element={
               <ProtectedRoute requiredRole="employee">
                 <EmployeeSettings />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/employee/reports-and-analytics" 
+            element={
+              <ProtectedRoute requiredRole="employee">
+                <EmployeeReportsAndAnalytics />
               </ProtectedRoute>
             } 
           />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { gsap } from 'gsap';
-import { FiHome, FiUsers, FiMessageCircle, FiSettings, FiCoffee, FiActivity, FiRefreshCw, FiChevronDown } from 'react-icons/fi';
+import { FiHome, FiUsers, FiMessageCircle, FiSettings, FiCoffee, FiActivity, FiRefreshCw, FiChevronDown, FiBarChart2 } from 'react-icons/fi';
 import { useTheme } from '../context/ThemeContext';
 
 const navItems = [
@@ -30,6 +30,7 @@ const navItems = [
     ]
   },
   { key: 'renewSubscription', label: 'Renew Subscription', icon: <FiRefreshCw />, path: '/employee/renew-subscription' },
+  { key: 'reports', label: 'Reports and Analytics', icon: <FiBarChart2 />, path: '/employee/reports-and-analytics' },
   { key: 'chat', label: 'Chat', icon: <FiMessageCircle />, path: '/employee/chat' },
   { key: 'settings', label: 'Settings', icon: <FiSettings />, path: '/employee/settings' }
 ];
@@ -234,6 +235,7 @@ const EmployeeSidebar = () => {
     if (path.startsWith('/employee/gym-plans')) return 'gymPlans';
     if (path.startsWith('/employee/workout-plans-overview')) return 'usersWorkoutPlans';
     if (path.startsWith('/employee/renew-subscription')) return 'renewSubscription';
+    if (path === '/employee/reports-and-analytics') return 'reports';
     if (path === '/employee/chat') return 'chat';
     if (path === '/employee/settings') return 'settings';
     return 'dashboard';

@@ -1027,5 +1027,196 @@ export const sendEmployeeReport = async (employeeEmail, employeeName, reportData
   }
 };
 
-export default { sendEmployeeCredentials, sendPasswordResetNotification, sendSubscriptionConfirmation, sendSubscriptionReminder, sendSubscriptionExpiration, sendUserWelcomeEmail, sendEmployeeReport };
+/**
+ * Send user report via email
+ * @param {string} userEmail - User's email address
+ * @param {string} userName - User's name
+ * @param {object} reportData - Complete user report data (user, mealPlan, workoutPlan, statistics)
+ * @returns {Promise}
+ */
+export const sendUserReport = async (userEmail, userName, reportData) => {
+  try {
+    // Validate email address
+    if (!userEmail || typeof userEmail !== 'string') {
+      throw new Error('Valid user email address is required');
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userEmail)) {
+      throw new Error(`Invalid email address format: ${userEmail}`);
+    }
+
+    // Check environment variables
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+      throw new Error('Email service not configured. Please set EMAIL_USER and EMAIL_PASSWORD environment variables.');
+    }
+
+    console.log(`📧 Preparing to send user report email to: ${userEmail}`);
+    const transporter = createTransporter();
+
+    // Format dates
+    const formatDate = (dateString) => {
+      if (!dateString) return 'N/A';
+      try {
+        return new Date(dateString).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+      } catch {
+        return dateString;
+      }
+    };
+
+    const { user, mealPlan, workoutPlan, statistics } = reportData;
+
+    // Build user info section
+    const userInfoSection = `
+      <div style="background: #f8f9fa; border-left: 4px solid #1f36ff; padding: 20px; margin: 15px 0; border-radius: 8px;">
+        <div style="margin: 10px 0;"><strong>Name:</strong> ${user.displayName || userName || 'N/A'}</div>
+        <div style="margin: 10px 0;"><strong>Email:</strong> ${user.email || user.loginEmail || userEmail}</div>
+        <div style="margin: 10px 0;"><strong>Phone:</strong> ${user.phoneNumber || 'N/A'}</div>
+        <div style="margin: 10px 0;"><strong>Account Created:</strong> ${formatDate(user.createdAt)}</div>
+        ${user.subscription ? `<div style="margin: 10px 0;"><strong>Subscription Status:</strong> <span style="color: ${user.subscription.status === 'active' ? '#10b981' : '#ef4444'}">${user.subscription.status || 'N/A'}</span></div>` : ''}
+      </div>
+    `;
+
+    // Build meal plan section
+    let mealPlanSection = '<p style="color: #666;">No meal plan assigned</p>';
+    if (mealPlan) {
+      const meals = [];
+      if (mealPlan.breakfast) meals.push(`<strong>Breakfast:</strong> ${mealPlan.breakfast.title || 'Breakfast'}`);
+      if (mealPlan.lunch) meals.push(`<strong>Lunch:</strong> ${mealPlan.lunch.title || 'Lunch'}`);
+      if (mealPlan.dinner) meals.push(`<strong>Dinner:</strong> ${mealPlan.dinner.title || 'Dinner'}`);
+      if (mealPlan.snacks) meals.push(`<strong>Snacks:</strong> ${mealPlan.snacks.title || 'Snacks'}`);
+
+      mealPlanSection = `
+        <div style="background: #f8f9fa; border-left: 4px solid #f59e0b; padding: 20px; margin: 15px 0; border-radius: 8px;">
+          <div style="margin: 10px 0;"><strong>Plan Name/Goal:</strong> ${mealPlan.goal || mealPlan.planName || 'N/A'}</div>
+          <div style="margin: 10px 0;"><strong>Calories Target:</strong> ${mealPlan.totalCalories || mealPlan.calories || 'N/A'} kcal</div>
+          <div style="margin: 10px 0;"><strong>Assigned Date:</strong> ${formatDate(mealPlan.createdAt || mealPlan.assignedDate)}</div>
+          ${meals.length > 0 ? `<div style="margin: 15px 0;"><strong>Meals:</strong><ul style="margin: 10px 0; padding-left: 20px;">${meals.map(meal => `<li>${meal}</li>`).join('')}</ul></div>` : ''}
+        </div>
+      `;
+    }
+
+    // Build workout plan section
+    let workoutPlanSection = '<p style="color: #666;">No workout plan assigned</p>';
+    if (workoutPlan) {
+      const exercisesSummary = workoutPlan.workouts && workoutPlan.workouts.length > 0
+        ? workoutPlan.workouts.slice(0, 5).map(workout => 
+            `<li><strong>${workout.name || `Day ${workout.day || ''}`}:</strong> ${workout.exercises?.length || 0} exercises</li>`
+          ).join('')
+        : '';
+
+      workoutPlanSection = `
+        <div style="background: #f8f9fa; border-left: 4px solid #ef4444; padding: 20px; margin: 15px 0; border-radius: 8px;">
+          <div style="margin: 10px 0;"><strong>Plan Name:</strong> ${workoutPlan.planName || 'N/A'}</div>
+          <div style="margin: 10px 0;"><strong>Goal:</strong> ${workoutPlan.goal || 'N/A'}</div>
+          <div style="margin: 10px 0;"><strong>Days per Week:</strong> ${workoutPlan.daysPerWeek || workoutPlan.workouts?.length || 'N/A'}</div>
+          ${exercisesSummary ? `<div style="margin: 15px 0;"><strong>Workouts Summary:</strong><ul style="margin: 10px 0; padding-left: 20px;">${exercisesSummary}</ul></div>` : ''}
+        </div>
+      `;
+    }
+
+    // Build progress statistics section
+    const stats = statistics || {};
+    const progressSection = `
+      <div style="background: #f8f9fa; border-left: 4px solid #10b981; padding: 20px; margin: 15px 0; border-radius: 8px;">
+        <div style="margin: 10px 0;"><strong>Completion Percentage:</strong> ${stats.completionPercentage || 0}%</div>
+        <div style="margin: 10px 0;"><strong>Active Days:</strong> ${stats.activeDays || 0}</div>
+        <div style="margin: 10px 0;"><strong>Skipped Days:</strong> ${stats.skippedDays || 0}</div>
+        <div style="margin: 10px 0;"><strong>Calories Compliance:</strong> ${stats.caloriesCompliance || 0}%</div>
+        <div style="margin: 10px 0;"><strong>Workout Compliance:</strong> ${stats.workoutCompliance || 0}%</div>
+        <div style="margin: 10px 0;"><strong>Total Progress Entries:</strong> ${stats.totalProgressEntries || 0}</div>
+      </div>
+    `;
+
+    const mailOptions = {
+      from: `"FitFix" <${process.env.EMAIL_USER}>`,
+      to: userEmail,
+      subject: `📊 Your FitFix Progress Report - ${userName || 'User'}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; margin: 0; padding: 0; }
+            .container { max-width: 700px; margin: 30px auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #1f36ff 0%, #15b5ff 100%); color: white; padding: 40px 30px; text-align: center; }
+            .header h1 { margin: 0; font-size: 32px; font-weight: bold; }
+            .content { padding: 40px 30px; }
+            .section { margin: 30px 0; }
+            .section-title { font-size: 20px; font-weight: bold; color: #1f36ff; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; }
+            .footer { background: #f8f9fa; padding: 30px; text-align: center; color: #666; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>📊 Your Progress Report</h1>
+              <p style="margin: 10px 0 0 0; font-size: 16px;">Comprehensive fitness & nutrition summary</p>
+            </div>
+            <div class="content">
+              <p>Hi <strong>${userName || 'there'}</strong>,</p>
+              <p>Your FitFix coach has shared your detailed progress report. Here's your complete summary:</p>
+
+              <div class="section">
+                <div class="section-title">👤 Your Information</div>
+                ${userInfoSection}
+              </div>
+
+              <div class="section">
+                <div class="section-title">🍽️ Meal Plan</div>
+                ${mealPlanSection}
+              </div>
+
+              <div class="section">
+                <div class="section-title">💪 Workout Plan</div>
+                ${workoutPlanSection}
+              </div>
+
+              <div class="section">
+                <div class="section-title">📈 Progress & Statistics</div>
+                ${progressSection}
+              </div>
+
+              <p style="margin-top: 30px; font-size: 14px; color: #666;">
+                This report was generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}.
+              </p>
+              <p style="margin-top: 20px;">Keep up the great work!<br><strong>Your FitFix Team</strong></p>
+            </div>
+            <div class="footer">
+              <p style="margin: 0;"><strong>FitFix Health & Fitness</strong></p>
+              <p style="margin: 5px 0 0 0;">Your journey to better health 💪</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    console.log(`📤 Sending email to ${userEmail}...`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ User report email sent successfully!');
+    console.log(`   - Message ID: ${info.messageId}`);
+    console.log(`   - To: ${userEmail}`);
+    console.log(`   - Subject: ${mailOptions.subject}`);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('❌ User report email failed:');
+    console.error(`   - Error: ${error.message}`);
+    console.error(`   - To: ${userEmail}`);
+    if (error.code) {
+      console.error(`   - Error Code: ${error.code}`);
+    }
+    if (error.response) {
+      console.error(`   - SMTP Response: ${error.response}`);
+    }
+    throw error;
+  }
+};
+
+export default { sendEmployeeCredentials, sendPasswordResetNotification, sendSubscriptionConfirmation, sendSubscriptionReminder, sendSubscriptionExpiration, sendUserWelcomeEmail, sendEmployeeReport, sendUserReport };
 

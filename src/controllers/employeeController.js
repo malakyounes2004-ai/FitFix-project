@@ -1,8 +1,9 @@
 // src/controllers/employeeController.js
 import { auth, db } from '../firebase.js';
 import admin from 'firebase-admin';
-import { sendUserWelcomeEmail } from '../utils/emailService.js';
+import { sendUserWelcomeEmail, sendUserReport } from '../utils/emailService.js';
 import { sendUserNotification, sendMealNotification } from '../utils/notificationHelper.js';
+import { computeDailyMacros } from '../utils/mealPlanMacros.js';
 
 /**
  * Create a new user with a temporary password (Employee/Admin only)
@@ -638,6 +639,20 @@ export async function bulkAssignMealPlan(req, res) {
           updatedAt: admin.firestore.FieldValue.serverTimestamp()
         };
 
+        // Compute and store daily macros totals
+        const macros = computeDailyMacros(mealPlan);
+        // Store in new dailyMacros format
+        mealPlan.dailyMacros = {
+          proteins: macros.proteins,
+          carbs: macros.carbs,
+          fats: macros.fats,
+          allZero: macros.allZero
+        };
+        // Keep old format for backward compatibility
+        mealPlan.dailyProteinG = macros.proteins;
+        mealPlan.dailyCarbsG = macros.carbs;
+        mealPlan.dailyFatsG = macros.fats;
+
         // Save meal plan under users/{userId}/mealPlan (as a field in the user document)
         await db.collection('users').doc(userId).update({
           mealPlan
@@ -731,6 +746,20 @@ export async function updateMealPlan(req, res) {
     if (!updatedMealPlan.createdAt) {
       updatedMealPlan.createdAt = userData.mealPlan.createdAt;
     }
+
+    // Compute and store daily macros totals
+    const macros = computeDailyMacros(updatedMealPlan);
+    // Store in new dailyMacros format
+    updatedMealPlan.dailyMacros = {
+      proteins: macros.proteins,
+      carbs: macros.carbs,
+      fats: macros.fats,
+      allZero: macros.allZero
+    };
+    // Keep old format for backward compatibility
+    updatedMealPlan.dailyProteinG = macros.proteins;
+    updatedMealPlan.dailyCarbsG = macros.carbs;
+    updatedMealPlan.dailyFatsG = macros.fats;
 
     // Get employee name for notifications
     const employeeDoc = await db.collection('users').doc(req.user.uid).get();
@@ -890,6 +919,34 @@ export async function assignMealPlan(req, res) {
     if (waterIntakeTarget) mealPlanData.waterIntakeTarget = parseFloat(waterIntakeTarget);
     if (stepsTarget) mealPlanData.stepsTarget = parseInt(stepsTarget);
     if (allergies) mealPlanData.allergies = allergies;
+
+    // Compute and store daily macros totals if meal plan has the new structure
+    // Check if it has breakfasts/lunches/dinners structure (new format)
+    if (meals && (meals.breakfasts || meals.lunches || meals.dinners || meals.breakfast || meals.lunch || meals.dinner)) {
+      const computedMacros = computeDailyMacros(meals);
+      // Store in new dailyMacros format
+      mealPlanData.dailyMacros = {
+        proteins: computedMacros.proteins,
+        carbs: computedMacros.carbs,
+        fats: computedMacros.fats,
+        allZero: computedMacros.allZero
+      };
+      // Keep old format for backward compatibility
+      mealPlanData.dailyProteinG = computedMacros.proteins;
+      mealPlanData.dailyCarbsG = computedMacros.carbs;
+      mealPlanData.dailyFatsG = computedMacros.fats;
+    } else {
+      // Legacy format - set defaults
+      mealPlanData.dailyMacros = {
+        proteins: 0,
+        carbs: 0,
+        fats: 0,
+        allZero: true
+      };
+      mealPlanData.dailyProteinG = 0;
+      mealPlanData.dailyCarbsG = 0;
+      mealPlanData.dailyFatsG = 0;
+    }
 
     // Create meal plan document
     const mealPlanRef = await db.collection('mealPlans').add(mealPlanData);
@@ -1302,4 +1359,203 @@ export async function getUserProgress(req, res) {
     });
   }
 }
+
+/**
+ * Send user report via email
+ * POST /api/employee/users/:userId/send-report
+ */
+export async function sendUserReportEmail(req, res) {
+  try {
+    const { userId } = req.params;
+    const employeeId = req.user.uid;
+
+    // Verify user exists and is assigned to this employee
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const userData = userDoc.data();
+    
+    // Verify user is assigned to this employee
+    if (userData.assignedEmployeeId !== employeeId && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'You are not assigned to this user'
+      });
+    }
+
+    // Get user email - prioritize real email over login email
+    // realEmail is the actual email entered by employee (e.g., user@gmail.com)
+    // loginEmail is the generated FitFix email (e.g., john.doe@fitfix.com)
+    // We want to send to the real email, not the login email
+    const userEmail = userData.realEmail || userData.email;
+    
+    if (!userEmail) {
+      // Only use loginEmail as last resort if no real email exists
+      if (userData.loginEmail) {
+        console.log(`⚠️ Warning: No real email found, using loginEmail as fallback: ${userData.loginEmail}`);
+        return res.status(400).json({
+          success: false,
+          message: 'User real email not found. Please update user profile with a valid email address. Cannot send report to login email.'
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: 'User email not found. Cannot send report without email address.'
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(userEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid email address format: ${userEmail}`
+      });
+    }
+
+    console.log(`📊 Preparing user report for: ${userData.displayName || userEmail} (${userId})`);
+
+    // Get progress entries
+    // Note: Removed orderBy to avoid requiring Firestore composite index
+    // We'll fetch all and sort in memory instead
+    const progressSnapshot = await db
+      .collection('progress')
+      .where('userId', '==', userId)
+      .get();
+
+    const progress = [];
+    progressSnapshot.forEach(doc => {
+      const progressData = doc.data();
+      progress.push({
+        id: doc.id,
+        ...progressData,
+        date: progressData.date?.toDate?.() || progressData.date
+      });
+    });
+
+    // Sort by date in descending order (newest first) in memory
+    progress.sort((a, b) => {
+      const dateA = a.date ? (a.date.toDate ? a.date.toDate().getTime() : new Date(a.date).getTime()) : 0;
+      const dateB = b.date ? (b.date.toDate ? b.date.toDate().getTime() : new Date(b.date).getTime()) : 0;
+      return dateB - dateA; // Descending order (newest first)
+    });
+
+    // Limit to 30 most recent entries
+    const limitedProgress = progress.slice(0, 30);
+
+    // Get workout plan
+    let workoutPlan = null;
+    try {
+      const workoutPlanDoc = await db.collection('workoutPlans').doc(userId).get();
+      if (workoutPlanDoc.exists) {
+        workoutPlan = {
+          id: workoutPlanDoc.id,
+          ...workoutPlanDoc.data()
+        };
+      }
+    } catch (error) {
+      console.warn('Error fetching workout plan:', error);
+    }
+
+    // Get meal plan from user data
+    const mealPlan = userData.mealPlan || null;
+
+    // Use limited progress for calculations
+    const progressForStats = limitedProgress;
+
+    // Calculate progress statistics
+    const totalDays = 30; // Assuming 30-day plan period
+    const activeDays = progressForStats.filter(p => p.workoutCompleted || p.mealPlanFollowed).length;
+    const skippedDays = Math.max(0, totalDays - activeDays);
+    const completionPercentage = totalDays > 0 ? Math.round((activeDays / totalDays) * 100) : 0;
+
+    // Calculate calories compliance
+    const mealPlanFollowedCount = progressForStats.filter(p => p.mealPlanFollowed === true).length;
+    const caloriesCompliance = progressForStats.length > 0 
+      ? Math.round((mealPlanFollowedCount / progressForStats.length) * 100)
+      : 0;
+
+    // Calculate workout compliance
+    const workoutCompletedCount = progressForStats.filter(p => p.workoutCompleted === true).length;
+    const workoutCompliance = progressForStats.length > 0
+      ? Math.round((workoutCompletedCount / progressForStats.length) * 100)
+      : 0;
+
+    // Prepare report data
+    const reportData = {
+      user: {
+        ...userData,
+        createdAt: userData.createdAt?.toDate?.()?.toISOString() || userData.createdAt,
+        updatedAt: userData.updatedAt?.toDate?.()?.toISOString() || userData.updatedAt
+      },
+      mealPlan: mealPlan ? {
+        ...mealPlan,
+        createdAt: mealPlan.createdAt?.toDate?.()?.toISOString() || mealPlan.createdAt
+      } : null,
+      workoutPlan,
+      statistics: {
+        completionPercentage,
+        activeDays,
+        skippedDays,
+        caloriesCompliance,
+        workoutCompliance,
+        totalProgressEntries: progressForStats.length
+      }
+    };
+
+    // Send email
+    try {
+      console.log(`📧 Sending report email to: ${userEmail}`);
+      await sendUserReport(
+        userEmail,
+        userData.displayName || userData.email || 'User',
+        reportData
+      );
+
+      console.log(`✅ Report email sent successfully to ${userEmail}`);
+      res.json({
+        success: true,
+        message: `User report sent successfully to ${userEmail}`
+      });
+    } catch (emailError) {
+      console.error('❌ Error sending email:', emailError);
+      console.error('   Error details:', {
+        message: emailError.message,
+        code: emailError.code,
+        response: emailError.response
+      });
+      
+      // Provide more helpful error messages
+      let errorMessage = 'Failed to send email';
+      if (emailError.message.includes('EMAIL_USER') || emailError.message.includes('EMAIL_PASSWORD')) {
+        errorMessage = 'Email service not configured. Please contact administrator.';
+      } else if (emailError.message.includes('Invalid email')) {
+        errorMessage = `Invalid email address: ${userEmail}`;
+      } else if (emailError.code === 'EAUTH') {
+        errorMessage = 'Email authentication failed. Please check email credentials.';
+      } else if (emailError.code === 'ECONNECTION') {
+        errorMessage = 'Could not connect to email server. Please try again later.';
+      } else {
+        errorMessage = `Failed to send email: ${emailError.message}`;
+      }
+
+      res.status(500).json({
+        success: false,
+        message: errorMessage
+      });
+    }
+  } catch (error) {
+    console.error('Send user report email error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Internal server error'
+    });
+  }
+}
+
 

@@ -3,25 +3,103 @@
 
 import { db } from '../firebase.js';
 import admin from 'firebase-admin';
+import { computeDailyMacros } from '../utils/mealPlanMacros.js';
 
 /**
  * Get user's meal plans
+ * Returns meal plans from both:
+ * 1. mealPlans collection (legacy)
+ * 2. users/{userId}/mealPlan field (new system)
  */
 export async function getMyMealPlans(req, res) {
   try {
-    const mealPlansSnapshot = await db
-      .collection('mealPlans')
-      .where('userId', '==', req.user.uid)
-      .where('status', '==', 'active')
-      .orderBy('createdAt', 'desc')
-      .get();
-
+    const userId = req.user.uid;
     const mealPlans = [];
-    mealPlansSnapshot.forEach(doc => {
-      mealPlans.push({
-        id: doc.id,
-        ...doc.data()
+
+    // 1. Get meal plans from mealPlans collection (legacy system)
+    try {
+      const mealPlansSnapshot = await db
+        .collection('mealPlans')
+        .where('userId', '==', userId)
+        .where('status', '==', 'active')
+        .orderBy('createdAt', 'desc')
+        .get();
+
+      mealPlansSnapshot.forEach(doc => {
+        const data = doc.data();
+        
+        // Recalculate macros if missing or zero
+        if (!data.dailyMacros || (!data.dailyProteinG && !data.dailyCarbsG && !data.dailyFatsG)) {
+          const macros = computeDailyMacros(data);
+          // Store in new dailyMacros format
+          data.dailyMacros = {
+            proteins: macros.proteins,
+            carbs: macros.carbs,
+            fats: macros.fats,
+            allZero: macros.allZero
+          };
+          // Keep old format for backward compatibility
+          data.dailyProteinG = macros.proteins;
+          data.dailyCarbsG = macros.carbs;
+          data.dailyFatsG = macros.fats;
+        }
+        
+        mealPlans.push({
+          id: doc.id,
+          source: 'collection',
+          ...data,
+          createdAt: data.createdAt?.toDate?.() || data.createdAt || null,
+          updatedAt: data.updatedAt?.toDate?.() || data.updatedAt || null
+        });
       });
+    } catch (error) {
+      console.warn('Error fetching from mealPlans collection:', error.message);
+      // Continue even if this fails
+    }
+
+    // 2. Get meal plan from user document (new system)
+    try {
+      const userDoc = await db.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data();
+        if (userData.mealPlan) {
+          const mealPlan = userData.mealPlan;
+          
+          // Ensure macros are calculated if missing
+          if (!mealPlan.dailyMacros || mealPlan.dailyProteinG === undefined || mealPlan.dailyCarbsG === undefined || mealPlan.dailyFatsG === undefined) {
+            const macros = computeDailyMacros(mealPlan);
+            // Store in new dailyMacros format
+            mealPlan.dailyMacros = {
+              proteins: macros.proteins,
+              carbs: macros.carbs,
+              fats: macros.fats,
+              allZero: macros.allZero
+            };
+            // Keep old format for backward compatibility
+            mealPlan.dailyProteinG = macros.proteins;
+            mealPlan.dailyCarbsG = macros.carbs;
+            mealPlan.dailyFatsG = macros.fats;
+          }
+
+          mealPlans.push({
+            id: 'user-meal-plan',
+            source: 'user-document',
+            ...mealPlan,
+            createdAt: mealPlan.createdAt?.toDate?.() || mealPlan.createdAt || null,
+            updatedAt: mealPlan.updatedAt?.toDate?.() || mealPlan.updatedAt || null
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('Error fetching meal plan from user document:', error.message);
+      // Continue even if this fails
+    }
+
+    // Sort by createdAt descending (newest first)
+    mealPlans.sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return dateB - dateA;
     });
 
     res.json({
@@ -43,25 +121,21 @@ export async function getMyMealPlans(req, res) {
  */
 export async function getMyWorkoutPlans(req, res) {
   try {
-    const workoutPlansSnapshot = await db
-      .collection('workoutPlans')
-      .where('userId', '==', req.user.uid)
-      .where('status', '==', 'active')
-      .orderBy('createdAt', 'desc')
-      .get();
+    const userId = req.user.uid;
+    const planDoc = await db.collection('workoutPlans').doc(userId).get();
 
     const workoutPlans = [];
-    workoutPlansSnapshot.forEach(doc => {
+    
+    if (planDoc.exists) {
       workoutPlans.push({
-        id: doc.id,
-        ...doc.data()
+        id: planDoc.id,
+        ...planDoc.data()
       });
-    });
+    }
 
     res.json({
       success: true,
-      data: workoutPlans,
-      count: workoutPlans.length
+      workoutPlans
     });
   } catch (error) {
     console.error('Get workout plans error:', error);
@@ -375,6 +449,130 @@ export async function deleteAccount(req, res) {
     res.status(500).json({
       success: false,
       message: error.message || 'Failed to delete account'
+    });
+  }
+}
+
+/**
+ * Get chat contacts for user
+ * Returns assigned employee (coach) and other users under the same employee
+ * GET /api/user/chat-contacts
+ */
+export async function getChatContacts(req, res) {
+  try {
+    const userId = req.user.uid;
+
+
+     // 🔹 Fetch full user document from Firestore
+    const userDoc = await db.collection('users').doc(userId).get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    } 
+
+  const userData = userDoc.data();
+    const assignedEmployeeId = userData.assignedEmployeeId;
+
+    // If user has no assigned employee, return empty list
+    if (!assignedEmployeeId) {
+      return res.json({
+        success: true,
+        contacts: []
+      });
+    }
+    const contacts = [];
+  
+
+    // 1. Fetch assigned employee (coach)
+    try {
+      const employeeDoc = await db.collection('users').doc(assignedEmployeeId).get();
+      if (employeeDoc.exists) {
+        const employeeData = employeeDoc.data();
+        // Only include if role is employee (not admin)
+        if (employeeData.role === 'employee') {
+          contacts.push({
+            uid: assignedEmployeeId,
+            displayName: employeeData.displayName || '',
+            role: 'employee',
+            photoURL: employeeData.photoURL || null
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching employee:', error);
+      // Continue even if employee fetch fails
+    }
+
+    // 2. Fetch other users with the same assignedEmployeeId (excluding self)
+    try {
+      const usersSnapshot = await db
+        .collection('users')
+        .where('assignedEmployeeId', '==', assignedEmployeeId)
+        .where('role', '==', 'user')
+        .get();
+
+      usersSnapshot.forEach(doc => {
+        // Exclude current user
+        if (doc.id !== userId) {
+          const userData = doc.data();
+          contacts.push({
+            uid: doc.id,
+            displayName: userData.displayName || '',
+            role: 'user',
+            photoURL: userData.photoURL || null
+          });
+        }
+      });
+    } catch (error) {
+      console.error('Error fetching other users:', error);
+      // Continue even if users fetch fails
+    }
+
+    return res.json({
+      success: true,
+      contacts
+    });
+  } catch (error) {
+    console.error('Get chat contacts error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to get chat contacts'
+    });
+  }
+}
+
+/**
+ * Save Expo Push Token for authenticated user
+ * POST /api/user/save-push-token
+ */
+export async function savePushToken(req, res) {
+  try {
+    const { pushToken } = req.body;
+    const userId = req.user.uid;
+
+    if (!pushToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'pushToken is required'
+      });
+    }
+
+    await db.collection('users').doc(userId).update({
+      pushToken,
+      pushTokenUpdatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    return res.json({
+      success: true
+    });
+  } catch (error) {
+    console.error('Save push token error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to save push token'
     });
   }
 }

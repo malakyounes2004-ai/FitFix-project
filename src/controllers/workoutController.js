@@ -166,9 +166,11 @@ export async function getExercises(req, res) {
     
     let exercises = [];
     snapshot.forEach(doc => {
+      const exerciseData = doc.data();
       exercises.push({
         id: doc.id,
-        ...doc.data()
+        ...exerciseData,
+        notes: exerciseData.notes || ''
       });
     });
     
@@ -306,7 +308,7 @@ export async function updateExercise(req, res) {
       }
       updateData.defaultReps = defaultReps;
     }
-    if (notes !== undefined) updateData.notes = notes.trim();
+    if (notes !== undefined) updateData.notes = notes ? notes.trim() : '';
     
     // GIF URL updates
     if (gifMaleUrl !== undefined) updateData.gifMaleUrl = gifMaleUrl;
@@ -467,17 +469,50 @@ export async function upsertUserWorkoutPlan(req, res) {
     const planRef = db.collection('workoutPlans').doc(userId);
     const planDoc = await planRef.get();
     
+    // Enrich exercises with notes from exercises collection
+    const enrichedDays = await Promise.all(
+      days.map(async (day) => {
+        const enrichedExercises = await Promise.all(
+          (day.exercises || []).map(async (exercise) => {
+            const exerciseId = exercise.id || exercise.exerciseId;
+            if (!exerciseId) {
+              // If no exercise ID, return exercise with empty notes
+              return { ...exercise, notes: '' };
+            }
+            
+            try {
+              const exerciseDoc = await db.collection('exercises').doc(exerciseId).get();
+              if (exerciseDoc.exists) {
+                const exerciseData = exerciseDoc.data();
+                return {
+                  ...exercise,
+                  notes: exerciseData.notes || ''
+                };
+              }
+            } catch (error) {
+              console.warn(`Failed to fetch notes for exercise ${exerciseId}:`, error.message);
+            }
+            
+            // If exercise doesn't exist or fetch failed, return with empty notes
+            return { ...exercise, notes: '' };
+          })
+        );
+        
+        return {
+          title: day.title.trim(),
+          warmup: day.warmup || [],
+          exercises: enrichedExercises,
+          cooldown: day.cooldown || []
+        };
+      })
+    );
+    
     const planData = {
       userId,
       goal: goal.trim(),
       experience: experience.trim(),
       daysPerWeek: parseInt(daysPerWeek),
-      days: days.map(day => ({
-        title: day.title.trim(),
-        warmup: day.warmup || [],
-        exercises: day.exercises || [],
-        cooldown: day.cooldown || []
-      })),
+      days: enrichedDays,
       assignedBy: employeeId,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };

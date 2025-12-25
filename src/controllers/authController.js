@@ -219,6 +219,24 @@ export async function getProfile(req, res) {
 
     const userData = userDoc.data();
 
+    // If user has an assigned employee, fetch the employee name
+    if (userData.assignedEmployeeId) {
+      try {
+        const employeeDoc = await db
+          .collection('users')
+          .doc(userData.assignedEmployeeId)
+          .get();
+
+        if (employeeDoc.exists) {
+          const employeeData = employeeDoc.data();
+          userData.assignedEmployeeName = employeeData.displayName || '';
+        }
+      } catch (e) {
+        // Fail silently, do not break profile response
+        // assignedEmployeeName will simply not be included
+      }
+    }
+
     res.json({
       success: true,
       data: {

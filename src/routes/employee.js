@@ -11,7 +11,8 @@ import {
   deleteMealPlan, 
   assignWorkoutPlan,
   getUserProgress,
-  getAdminInfo
+  getAdminInfo,
+  sendUserReportEmail
 } from '../controllers/employeeController.js';
 import { generateUserPlan } from '../controllers/aiController.js';
 import { createNotification } from '../controllers/notificationController.js';
@@ -39,6 +40,7 @@ router.delete('/users/:userId', verifyEmployee, deleteUser);
 router.post('/users/:userId/meal-plans', verifyEmployee, assignMealPlan);
 router.post('/users/:userId/workout-plans', verifyEmployee, assignWorkoutPlan);
 router.get('/users/:userId/progress', verifyEmployee, getUserProgress);
+router.post('/users/:userId/send-report', verifyEmployee, sendUserReportEmail);
 router.post('/users/:userId/ai-plans', verifyEmployee, (req, res, next) => {
   req.body.userId = req.params.userId;
   next();

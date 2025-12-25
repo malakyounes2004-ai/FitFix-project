@@ -8,7 +8,9 @@ import {
   updateProfile,
   changePassword,
   changeEmail,
-  deleteAccount
+  deleteAccount,
+  getChatContacts,
+  savePushToken
 } from '../controllers/userController.js';
 import { getProfile } from '../controllers/authController.js';
 import {
@@ -41,5 +43,11 @@ router.delete('/progress/:id', verifyUser, deleteProgress);
 // Meal and workout plans
 router.get('/meal-plans', verifyUser, getMyMealPlans);
 router.get('/workout-plans', verifyUser, getMyWorkoutPlans);
+
+// Chat contacts
+router.get('/chat-contacts', verifyUser, getChatContacts);
+
+// Push token
+router.post('/save-push-token', authenticate, savePushToken);
 
 export default router;

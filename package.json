@@ -12,7 +12,8 @@
     "test-connection": "node src/utils/testConnection.js",
     "test-api": "node test-api.js",
     "test-login": "node test-login.js",
-    "test-all": "node test-all-endpoints.js"
+    "test-all": "node test-all-endpoints.js",
+    "update-meal-plan-macros": "node src/utils/updateMealPlanMacros.js"
   },
   "keywords": [],
   "author": "",

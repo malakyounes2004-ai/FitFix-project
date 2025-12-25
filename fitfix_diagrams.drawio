@@ -1,0 +1,345 @@
+<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="5.0" version="21.0.0" etag="drawio" type="device">
+  <diagram id="erd" name="ER Diagram">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="erd_0"/>
+        <mxCell id="erd_1" parent="erd_0"/>
+        <mxCell id="erd_users" value="Users&#xa;(role: admin|employee|user)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="50" y="50" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_chats" value="Chats&#xa;(participants, lastMessage)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="350" y="50" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_messages" value="Messages&#xa;(content, senderId, read)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="650" y="50" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_notifications" value="Notifications&#xa;(type, userId, read)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="950" y="50" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_payments" value="Payments&#xa;(userId, employeeId, status)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="50" y="250" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_employeePayments" value="EmployeePayments&#xa;(email, selectedPlan, paid)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="350" y="250" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_subscriptions" value="Subscriptions&#xa;(employeeEmail, planType, status)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="650" y="250" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_employeeRequests" value="EmployeeRequests&#xa;(email, status, selectedPlan)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="950" y="250" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_mealPlans" value="MealPlans&#xa;(userId, employeeId, meals)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="50" y="450" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_mealPlanTemplates" value="MealPlanTemplates&#xa;(title, category, meals)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="350" y="450" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_workoutPlans" value="WorkoutPlans&#xa;(userId, employeeId, exercises)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="650" y="450" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_exercises" value="Exercises&#xa;(name, category, gifUrl)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="950" y="450" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_progress" value="Progress&#xa;(Subcollection under Users)&#xa;(date, weight, measurements)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="50" y="650" width="180" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_adminTransactions" value="AdminTransactions&#xa;(type, amount, createdBy)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="erd_1">
+          <mxGeometry x="350" y="650" width="180" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel1" value="manages" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_users">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel2" value="assigned to" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_users">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel3" value="participates in" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_chats">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel4" value="contains" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_chats" target="erd_messages">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel5" value="receives" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_notifications">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel6" value="creates" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_payments">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel7" value="receives" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_payments">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel8" value="creates" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_employeePayments" target="erd_subscriptions">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel9" value="has" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_subscriptions">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel10" value="creates" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_employeeRequests">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel11" value="creates" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_mealPlans">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel12" value="assigned to" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_mealPlans">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel13" value="creates" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_mealPlanTemplates">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel14" value="creates" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_workoutPlans">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel15" value="assigned to" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_workoutPlans">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel16" value="references" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_workoutPlans" target="erd_exercises">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel17" value="has" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_progress">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="erd_rel18" value="creates" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="erd_1" source="erd_users" target="erd_adminTransactions">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="system-arch" name="System Architecture">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="system-arch_0"/>
+        <mxCell id="system-arch_1" parent="system-arch_0"/>
+        <mxCell id="system-arch_client" value="Client Layer&#xa;(React Frontend)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" vertex="1" parent="system-arch_1">
+          <mxGeometry x="200" y="200" width="200" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_api" value="API Layer&#xa;(Express.js Backend)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" vertex="1" parent="system-arch_1">
+          <mxGeometry x="500" y="200" width="200" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_firebase" value="Firebase Services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=14;" vertex="1" parent="system-arch_1">
+          <mxGeometry x="800" y="200" width="200" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_auth" value="Firebase Auth" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="system-arch_1">
+          <mxGeometry x="800" y="350" width="90" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_firestore" value="Firestore DB" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="system-arch_1">
+          <mxGeometry x="910" y="350" width="90" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_storage" value="Firebase Storage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="system-arch_1">
+          <mxGeometry x="800" y="430" width="90" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_openai" value="OpenAI API&#xa;(AI Features)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="system-arch_1">
+          <mxGeometry x="910" y="430" width="90" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_email" value="Email Service&#xa;(Nodemailer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="system-arch_1">
+          <mxGeometry x="1100" y="200" width="150" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_scheduler" value="Scheduler&#xa;(Node-cron)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="system-arch_1">
+          <mxGeometry x="1100" y="300" width="150" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_conn1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="system-arch_1" source="system-arch_client" target="system-arch_api">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_conn2" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="system-arch_1" source="system-arch_api" target="system-arch_firebase">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_conn3" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="system-arch_1" source="system-arch_firebase" target="system-arch_auth">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_conn4" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="system-arch_1" source="system-arch_firebase" target="system-arch_firestore">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_conn5" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="system-arch_1" source="system-arch_firebase" target="system-arch_storage">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_conn6" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="system-arch_1" source="system-arch_api" target="system-arch_openai">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_conn7" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="system-arch_1" source="system-arch_api" target="system-arch_email">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="system-arch_conn8" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="system-arch_1" source="system-arch_api" target="system-arch_scheduler">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="user-flow" name="User Role Flow">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="user-flow_0"/>
+        <mxCell id="user-flow_1" parent="user-flow_0"/>
+        <mxCell id="user-flow_admin" value="Admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=14;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="200" y="100" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_employee" value="Employee" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=14;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="500" y="100" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_user" value="User" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=14;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="800" y="100" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_admin1" value="Manage Employees" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="150" y="200" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_admin2" value="Approve Payments" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="280" y="200" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_admin3" value="Manage Subscriptions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="150" y="270" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_admin4" value="View Analytics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="280" y="270" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_emp1" value="Create Users" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="450" y="200" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_emp2" value="Create Plans" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="580" y="200" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_emp3" value="Track Progress" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="450" y="270" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_emp4" value="Chat with Users" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="580" y="270" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_user1" value="View Plans" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="750" y="200" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_user2" value="Track Progress" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="880" y="200" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_user3" value="Make Payments" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="750" y="270" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_user4" value="Chat with Coach" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;" vertex="1" parent="user-flow_1">
+          <mxGeometry x="880" y="270" width="120" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_conn1" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="user-flow_1" source="user-flow_admin" target="user-flow_admin1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_conn2" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="user-flow_1" source="user-flow_admin" target="user-flow_admin2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_conn3" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="user-flow_1" source="user-flow_admin" target="user-flow_admin3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_conn4" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="user-flow_1" source="user-flow_admin" target="user-flow_admin4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_conn5" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="user-flow_1" source="user-flow_employee" target="user-flow_emp1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_conn6" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="user-flow_1" source="user-flow_employee" target="user-flow_emp2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_conn7" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="user-flow_1" source="user-flow_employee" target="user-flow_emp3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_conn8" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="user-flow_1" source="user-flow_employee" target="user-flow_emp4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_conn9" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="user-flow_1" source="user-flow_user" target="user-flow_user1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_conn10" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="user-flow_1" source="user-flow_user" target="user-flow_user2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_conn11" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="user-flow_1" source="user-flow_user" target="user-flow_user3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="user-flow_conn12" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="user-flow_1" source="user-flow_user" target="user-flow_user4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="payment-flow" name="Payment &amp; Subscription Flow">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="payment-flow_0"/>
+        <mxCell id="payment-flow_1" parent="payment-flow_0"/>
+        <mxCell id="payment-flow_start1" value="Employee Request" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="payment-flow_1">
+          <mxGeometry x="200" y="200" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_step1" value="Admin Approves" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="payment-flow_1">
+          <mxGeometry x="400" y="200" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_step2" value="Employee Payment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="payment-flow_1">
+          <mxGeometry x="600" y="200" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_step3" value="Create Subscription" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="payment-flow_1">
+          <mxGeometry x="800" y="200" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_step4" value="Create Employee Account" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="payment-flow_1">
+          <mxGeometry x="1000" y="200" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_start2" value="User Payment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="payment-flow_1">
+          <mxGeometry x="200" y="400" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_step5" value="Employee Approves" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="payment-flow_1">
+          <mxGeometry x="400" y="400" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_step6" value="Admin Approves" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="payment-flow_1">
+          <mxGeometry x="600" y="400" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_step7" value="Payment Completed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="payment-flow_1">
+          <mxGeometry x="800" y="400" width="150" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_conn1" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="payment-flow_1" source="payment-flow_start1" target="payment-flow_step1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_conn2" value="Yes" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="payment-flow_1" source="payment-flow_step1" target="payment-flow_step2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_conn3" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="payment-flow_1" source="payment-flow_step2" target="payment-flow_step3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_conn4" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="payment-flow_1" source="payment-flow_step3" target="payment-flow_step4">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_conn5" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="payment-flow_1" source="payment-flow_start2" target="payment-flow_step5">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_conn6" value="Yes" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="payment-flow_1" source="payment-flow_step5" target="payment-flow_step6">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="payment-flow_conn7" value="Yes" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="payment-flow_1" source="payment-flow_step6" target="payment-flow_step7">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="chat-flow" name="Chat &amp; Communication Flow">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="chat-flow_0"/>
+        <mxCell id="chat-flow_1" parent="chat-flow_0"/>
+        <mxCell id="chat-flow_user1" value="User A" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" vertex="1" parent="chat-flow_1">
+          <mxGeometry x="200" y="300" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="chat-flow_user2" value="User B" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" vertex="1" parent="chat-flow_1">
+          <mxGeometry x="900" y="300" width="120" height="60" as="geometry"/>
+        </mxCell>
+        <mxCell id="chat-flow_chat" value="Chat&#xa;(participants: [A, B])" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" vertex="1" parent="chat-flow_1">
+          <mxGeometry x="500" y="200" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="chat-flow_messages" value="Messages&#xa;Subcollection" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" vertex="1" parent="chat-flow_1">
+          <mxGeometry x="500" y="350" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="chat-flow_notif" value="Notifications" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" vertex="1" parent="chat-flow_1">
+          <mxGeometry x="500" y="500" width="200" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="chat-flow_conn1" value="sends message" style="endArrow=block;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="chat-flow_1" source="chat-flow_user1" target="chat-flow_chat">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="chat-flow_conn2" value="receives message" style="endArrow=block;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="chat-flow_1" source="chat-flow_chat" target="chat-flow_user2">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="chat-flow_conn3" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="chat-flow_1" source="chat-flow_chat" target="chat-flow_messages">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="chat-flow_conn4" value="creates" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;strokeWidth=2;" edge="1" parent="chat-flow_1" source="chat-flow_chat" target="chat-flow_notif">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

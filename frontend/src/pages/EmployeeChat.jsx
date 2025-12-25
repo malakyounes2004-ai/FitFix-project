@@ -138,42 +138,102 @@ const EmployeeChat = () => {
         console.error('Error listening to chats:', error);
       });
       
-      // Store unsubscribe function
+      // Store chats unsubscribe function
+      const chatsUnsubscribeRef = { current: chatsUnsubscribe };
+      
+      // Set up presence tracking
+      const interval = setInterval(() => {
+        updateMyPresence('online');
+      }, 20000); // Update every 20 seconds
+      
+      // Single consolidated cleanup function
       return () => {
-        chatsUnsubscribe();
-        if (unsubscribeRef.current) {
-          unsubscribeRef.current();
+        try {
+          // Clean up chats listener
+          if (chatsUnsubscribeRef.current && typeof chatsUnsubscribeRef.current === 'function') {
+            chatsUnsubscribeRef.current();
+            chatsUnsubscribeRef.current = null;
+          }
+        } catch (error) {
+          console.warn('Error cleaning up chats listener:', error);
         }
+        
+        try {
+          // Clean up messages listener
+          if (unsubscribeRef.current && typeof unsubscribeRef.current === 'function') {
+            unsubscribeRef.current();
+            unsubscribeRef.current = null;
+          }
+        } catch (error) {
+          console.warn('Error cleaning up messages listener:', error);
+        }
+        
+        // Clean up polling
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
         }
-        updateMyPresence('offline');
+        
+        // Clean up presence interval
+        if (interval) {
+          clearInterval(interval);
+        }
+        
+        try {
+          updateMyPresence('offline');
+        } catch (error) {
+          console.warn('Error updating presence to offline:', error);
+        }
+        
         // Clean up presence listeners
-        Object.values(presenceUnsubscribesRef.current).forEach(unsub => unsub());
-        Object.values(typingUnsubscribesRef.current).forEach(unsub => unsub());
+        try {
+          Object.values(presenceUnsubscribesRef.current).forEach(unsub => {
+            if (unsub && typeof unsub === 'function') {
+              try {
+                unsub();
+              } catch (error) {
+                console.warn('Error cleaning up presence listener:', error);
+              }
+            }
+          });
+          presenceUnsubscribesRef.current = {};
+        } catch (error) {
+          console.warn('Error cleaning up presence listeners:', error);
+        }
+        
+        // Clean up typing listeners
+        try {
+          Object.values(typingUnsubscribesRef.current).forEach(unsub => {
+            if (unsub && typeof unsub === 'function') {
+              try {
+                unsub();
+              } catch (error) {
+                console.warn('Error cleaning up typing listener:', error);
+              }
+            }
+          });
+          typingUnsubscribesRef.current = {};
+        } catch (error) {
+          console.warn('Error cleaning up typing listeners:', error);
+        }
+      };
+    } else {
+      // Set up presence tracking even if db is not available
+      const interval = setInterval(() => {
+        updateMyPresence('online');
+      }, 20000);
+      
+      return () => {
+        if (interval) {
+          clearInterval(interval);
+        }
+        try {
+          updateMyPresence('offline');
+        } catch (error) {
+          console.warn('Error updating presence to offline:', error);
+        }
       };
     }
-    
-    // Set up presence tracking
-    const interval = setInterval(() => {
-      updateMyPresence('online');
-    }, 20000); // Update every 20 seconds
-    
-    return () => {
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-      }
-      if (pollingIntervalRef.current) {
-        clearInterval(pollingIntervalRef.current);
-        pollingIntervalRef.current = null;
-      }
-      updateMyPresence('offline');
-      clearInterval(interval);
-      // Clean up presence listeners
-      Object.values(presenceUnsubscribesRef.current).forEach(unsub => unsub());
-      Object.values(typingUnsubscribesRef.current).forEach(unsub => unsub());
-    };
   }, []);
 
   useEffect(() => {
@@ -209,9 +269,13 @@ const EmployeeChat = () => {
         }
       }
       // Clean up message listener
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = null;
+      try {
+        if (unsubscribeRef.current && typeof unsubscribeRef.current === 'function') {
+          unsubscribeRef.current();
+          unsubscribeRef.current = null;
+        }
+      } catch (error) {
+        console.warn('Error cleaning up messages listener:', error);
       }
       // Clean up polling
       if (pollingIntervalRef.current) {
@@ -496,11 +560,23 @@ const EmployeeChat = () => {
           pollingIntervalRef.current = null;
         }
 
-        if (unsubscribeRef.current) {
-          unsubscribeRef.current();
+        try {
+          if (unsubscribeRef.current && typeof unsubscribeRef.current === 'function') {
+            unsubscribeRef.current();
+            unsubscribeRef.current = null;
+          }
+        } catch (error) {
+          console.warn('Error cleaning up messages listener in loadMessages:', error);
         }
 
         try {
+          // Verify db is still valid before setting up listener
+          if (!db) {
+            console.warn('[EmployeeChat] Database not available, falling back to polling');
+            setupPollingFallback(chatId);
+            return;
+          }
+          
           // Listen to messages subcollection: chats/{chatId}/messages/
           const messagesRef = collection(db, 'chats', chatId, 'messages');
           const messagesQuery = query(messagesRef, orderBy('createdAt', 'asc'));
