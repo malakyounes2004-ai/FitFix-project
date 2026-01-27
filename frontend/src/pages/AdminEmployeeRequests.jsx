@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { FiCheckCircle, FiXCircle, FiEye, FiRefreshCw, FiShield } from 'react-icons/fi';
+import { FiCheckCircle, FiXCircle, FiEye, FiRefreshCw, FiShield, FiDownload, FiFile } from 'react-icons/fi';
 import { useNotification } from '../hooks/useNotification';
 import AdminSidebar from '../components/AdminSidebar';
 import { useTheme } from '../context/ThemeContext';
@@ -21,6 +21,11 @@ const AdminEmployeeRequests = () => {
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
+
+  const formatRecaptcha = (value) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toFixed(2) : 'N/A';
+  };
 
   const loadRequests = async () => {
     try {
@@ -238,7 +243,7 @@ const AdminEmployeeRequests = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className={`w-2 h-2 rounded-full ${request.recaptchaScore >= 0.5 ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-                            <span className="text-xs text-slate-400">reCAPTCHA: {request.recaptchaScore?.toFixed(2) || 'N/A'}</span>
+                            <span className="text-xs text-slate-400">reCAPTCHA: {formatRecaptcha(request.recaptchaScore)}</span>
                           </div>
                         </div>
                       </td>
@@ -249,6 +254,18 @@ const AdminEmployeeRequests = () => {
                       </td>
                       <td className="py-4">
                         <div className="flex justify-end gap-2">
+                          {request.cvUrl && (
+                            <a
+                              href={request.cvUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 rounded-xl bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition"
+                              title="View CV"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <FiFile />
+                            </a>
+                          )}
                           <button
                             onClick={() => handleViewDetails(request)}
                             className="p-2 rounded-xl bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition"
@@ -355,12 +372,36 @@ const AdminEmployeeRequests = () => {
                 </div>
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-1">reCAPTCHA Score</p>
-                  <p className="text-white">{selectedRequest.recaptchaScore?.toFixed(2) || 'N/A'}</p>
+                  <p className="text-white">{formatRecaptcha(selectedRequest.recaptchaScore)}</p>
                 </div>
                 {selectedRequest.notes && (
                   <div className="md:col-span-2">
                     <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-1">Notes</p>
                     <p className="text-white">{selectedRequest.notes}</p>
+                  </div>
+                )}
+                {selectedRequest.cvUrl && (
+                  <div className="md:col-span-2">
+                    <p className="text-xs uppercase tracking-[0.3em] text-slate-500 mb-2">CV Document</p>
+                    <div className="flex items-center gap-3">
+                      <a
+                        href={selectedRequest.cvUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-400 border border-blue-500/40 rounded-xl hover:bg-blue-500/30 transition"
+                      >
+                        <FiFile className="text-lg" />
+                        <span>Preview CV</span>
+                      </a>
+                      <a
+                        href={selectedRequest.cvUrl}
+                        download
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-xl hover:bg-emerald-500/30 transition"
+                      >
+                        <FiDownload className="text-lg" />
+                        <span>Download CV</span>
+                      </a>
+                    </div>
                   </div>
                 )}
               </div>

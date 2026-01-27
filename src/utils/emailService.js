@@ -1218,5 +1218,157 @@ export const sendUserReport = async (userEmail, userName, reportData) => {
   }
 };
 
-export default { sendEmployeeCredentials, sendPasswordResetNotification, sendSubscriptionConfirmation, sendSubscriptionReminder, sendSubscriptionExpiration, sendUserWelcomeEmail, sendEmployeeReport, sendUserReport };
+/**
+ * Send password reset OTP code via email
+ * @param {string} userEmail - User's email address
+ * @param {string} userName - User's name (optional)
+ * @param {string} otpCode - 6-digit OTP code
+ * @returns {Promise}
+ */
+export const sendPasswordResetOTP = async (userEmail, userName = 'User', otpCode) => {
+  try {
+    const transporter = createTransporter();
+
+    const mailOptions = {
+      from: `"FitFix" <${process.env.EMAIL_USER}>`,
+      to: userEmail,
+      subject: '🔐 Your FitFix Password Reset Code',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <style>
+            body {
+              font-family: 'Segoe UI', Arial, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              background-color: #f4f4f4;
+              margin: 0;
+              padding: 0;
+            }
+            .container {
+              max-width: 600px;
+              margin: 30px auto;
+              background: white;
+              border-radius: 16px;
+              overflow: hidden;
+              box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            }
+            .header {
+              background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+              color: white;
+              padding: 40px 30px;
+              text-align: center;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 32px;
+              font-weight: bold;
+            }
+            .content {
+              padding: 40px 30px;
+            }
+            .otp-box {
+              background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+              border: 3px solid #a855f7;
+              border-radius: 12px;
+              padding: 30px;
+              margin: 30px 0;
+              text-align: center;
+            }
+            .otp-code {
+              font-size: 48px;
+              font-weight: bold;
+              color: #9333ea;
+              letter-spacing: 8px;
+              margin: 20px 0;
+              font-family: 'Courier New', monospace;
+            }
+            .warning-box {
+              background: #fff3cd;
+              border-left: 4px solid #ffc107;
+              padding: 15px;
+              margin: 25px 0;
+              border-radius: 8px;
+              font-size: 14px;
+              color: #856404;
+            }
+            .info-box {
+              background: #e3f2fd;
+              border-left: 4px solid #2196f3;
+              padding: 15px;
+              margin: 25px 0;
+              border-radius: 8px;
+              font-size: 14px;
+              color: #1565c0;
+            }
+            .footer {
+              background: #f8f9fa;
+              padding: 30px;
+              text-align: center;
+              color: #666;
+              font-size: 14px;
+            }
+            .footer strong {
+              color: #333;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Password Reset</h1>
+              <p style="margin: 10px 0 0 0; font-size: 16px;">Your verification code</p>
+            </div>
+            
+            <div class="content">
+              <p>Hi <strong>${userName}</strong>,</p>
+              
+              <p>We received a request to reset your FitFix account password. Use the verification code below to proceed:</p>
+              
+              <div class="otp-box">
+                <div style="font-size: 14px; color: #666; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">Your Verification Code</div>
+                <div class="otp-code">${otpCode}</div>
+                <div style="font-size: 12px; color: #666; margin-top: 10px;">Valid for 10 minutes</div>
+              </div>
+              
+              <div class="warning-box">
+                <strong>⚠️ Security Notice:</strong><br>
+                This code will expire in 10 minutes. Do not share this code with anyone. If you didn't request a password reset, please ignore this email.
+              </div>
+              
+              <div class="info-box">
+                <strong>ℹ️ How to use:</strong><br>
+                1. Enter this code in the mobile app<br>
+                2. Create your new password<br>
+                3. Log in with your new password
+              </div>
+              
+              <p style="margin-top: 30px; font-size: 14px; color: #666;">
+                If you have any questions or need assistance, please contact our support team.
+              </p>
+              
+              <p style="margin-top: 20px;">Best regards,<br><strong>FitFix Team</strong></p>
+            </div>
+            
+            <div class="footer">
+              <p style="margin: 0;"><strong>FitFix Health & Fitness</strong></p>
+              <p style="margin: 5px 0 0 0;">Your journey to better health 💪</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ Password reset OTP email sent successfully:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('❌ Password reset OTP email failed:', error);
+    throw error;
+  }
+};
+
+export default { sendEmployeeCredentials, sendPasswordResetNotification, sendSubscriptionConfirmation, sendSubscriptionReminder, sendSubscriptionExpiration, sendUserWelcomeEmail, sendEmployeeReport, sendUserReport, sendPasswordResetOTP };
 

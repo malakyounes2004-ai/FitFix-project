@@ -2,8 +2,45 @@
 import admin, { db } from '../firebase.js';
 import { sendEmployeeCredentials } from '../utils/emailService.js';
 import { auth } from '../firebase.js';
+import multer from 'multer';
 
 const FieldValue = admin.firestore.FieldValue;
+
+// Initialize storage bucket (lazy load to avoid initialization errors)
+let bucket = null;
+const getBucket = () => {
+  if (!bucket) {
+    try {
+      const bucketName = process.env.FIREBASE_STORAGE_BUCKET || 'fitfix-database.firebasestorage.app';
+      bucket = admin.storage().bucket(bucketName);
+      console.log('✅ Firebase Storage bucket initialized:', bucketName);
+    } catch (error) {
+      console.error('❌ Failed to initialize storage bucket:', error.message);
+      throw error;
+    }
+  }
+  return bucket;
+};
+
+// Multer configuration for handling PDF file uploads in memory
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB max per PDF
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept only PDF files
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'), false);
+    }
+  }
+});
+
+// Export multer middleware for routes
+export const uploadCVMiddleware = upload.single('cv');
 
 const PLAN_MAP = {
   monthly: { label: 'Monthly Plan', amount: 200, months: 1 },
@@ -15,6 +52,7 @@ const PLAN_MAP = {
 /**
  * Create employee request
  * POST /api/employee-requests
+ * Supports multipart/form-data with optional CV PDF file
  */
 export const createEmployeeRequest = async (req, res) => {
   try {
@@ -34,6 +72,15 @@ export const createEmployeeRequest = async (req, res) => {
       phoneVerified
     } = req.body;
 
+    // Coerce multipart/form-data values (strings) into expected types
+    const parsedRecaptchaScore = Number.parseFloat(recaptchaScore);
+    const parsedAmount = amount !== undefined && amount !== null && amount !== '' ? Number.parseFloat(amount) : null;
+    const parsedPhoneVerified =
+      phoneVerified === true ||
+      phoneVerified === 'true' ||
+      phoneVerified === 1 ||
+      phoneVerified === '1';
+
     // Validation
     if (!fullName || !email || !phone || !address || !country || !city || !gender || !dateOfBirth) {
       return res.status(400).json({ 
@@ -49,14 +96,14 @@ export const createEmployeeRequest = async (req, res) => {
       });
     }
 
-    if (recaptchaScore === undefined || recaptchaScore === null) {
+    if (recaptchaScore === undefined || recaptchaScore === null || Number.isNaN(parsedRecaptchaScore)) {
       return res.status(400).json({ 
         success: false, 
         message: 'reCAPTCHA verification required.' 
       });
     }
 
-    if (recaptchaScore < 0.5) {
+    if (parsedRecaptchaScore < 0.5) {
       return res.status(400).json({ 
         success: false, 
         message: 'Your request looks suspicious. Please try again.' 
@@ -65,7 +112,7 @@ export const createEmployeeRequest = async (req, res) => {
 
     // Phone verification is optional if Firebase is not configured on frontend
     // But we still require it if the field is explicitly set to false
-    if (phoneVerified === false && recaptchaScore >= 0.5) {
+    if (parsedPhoneVerified === false && parsedRecaptchaScore >= 0.5) {
       // Allow submission if reCAPTCHA passed but phone not verified (Firebase not configured)
       console.warn('⚠️ Request submitted without phone verification (Firebase may not be configured)');
     }
@@ -97,10 +144,42 @@ export const createEmployeeRequest = async (req, res) => {
       });
     }
 
-    // Create request document
+    // Create request document first to get the ID
     const requestRef = db.collection('employeeRequests').doc();
+    const requestId = requestRef.id;
+
+    // Handle CV file upload if provided (after validation passes)
+    let cvUrl = null;
+    if (req.file) {
+      try {
+        const storageBucket = getBucket();
+        const cvFilePath = `employee-cvs/${requestId}/cv.pdf`;
+        const cvFileRef = storageBucket.file(cvFilePath);
+        
+        await cvFileRef.save(req.file.buffer, {
+          metadata: {
+            contentType: 'application/pdf',
+            cacheControl: 'public, max-age=31536000'
+          }
+        });
+
+        // Make file publicly accessible
+        await cvFileRef.makePublic();
+
+        // Get public URL
+        cvUrl = `https://storage.googleapis.com/${storageBucket.name}/${cvFilePath}`;
+        console.log('✅ CV uploaded:', cvUrl);
+      } catch (uploadError) {
+        console.error('❌ Error uploading CV:', uploadError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to upload CV file. Please try again.'
+        });
+      }
+    }
+
     const requestData = {
-      id: requestRef.id,
+      id: requestId,
       fullName,
       email: email.toLowerCase(),
       phone,
@@ -112,9 +191,10 @@ export const createEmployeeRequest = async (req, res) => {
       notes: notes || null,
       selectedPlan,
       selectedPlanLabel: PLAN_MAP[selectedPlan].label,
-      amount: amount || PLAN_MAP[selectedPlan].amount,
-      recaptchaScore,
-      phoneVerified,
+      amount: parsedAmount ?? PLAN_MAP[selectedPlan].amount,
+      recaptchaScore: parsedRecaptchaScore,
+      phoneVerified: parsedPhoneVerified,
+      cvUrl: cvUrl || null,
       status: 'pending',
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp()

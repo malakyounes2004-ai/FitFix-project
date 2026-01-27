@@ -406,7 +406,7 @@ const RecommendationsReports = () => {
             />
             <StatisticCard
               title="Total Payments"
-              value={`$${(statistics.totalRevenue || 0).toLocaleString()}`}
+              value={`$${Number(statistics.totalRevenue || 0).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
               icon="💰"
               color="purple"
               isLoading={isLoadingStats}

@@ -12,6 +12,7 @@ import {
   getChatContacts,
   savePushToken
 } from '../controllers/userController.js';
+import { getReminders, updateReminders } from '../controllers/remindersController.js';
 import { getProfile } from '../controllers/authController.js';
 import {
   createProgress,
@@ -49,5 +50,9 @@ router.get('/chat-contacts', verifyUser, getChatContacts);
 
 // Push token
 router.post('/save-push-token', authenticate, savePushToken);
+
+// Reminders routes
+router.get('/reminders', authenticate, getReminders);
+router.put('/reminders', authenticate, updateReminders);
 
 export default router;

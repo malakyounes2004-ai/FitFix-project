@@ -146,10 +146,18 @@ export async function getAllEmployees(req, res) {
 
     const employees = [];
     employeesSnapshot.forEach(doc => {
-      employees.push({
+      const data = doc.data();
+      
+      // Serialize Firestore Timestamps to ISO strings
+      const employee = {
         uid: doc.id,
-        ...doc.data()
-      });
+        ...data,
+        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt || null,
+        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || data.updatedAt || null,
+        lastLogin: data.lastLogin?.toDate?.()?.toISOString() || data.lastLogin || null
+      };
+      
+      employees.push(employee);
     });
 
     res.json({
@@ -403,7 +411,7 @@ export async function getDashboardStats(req, res) {
 
     subscriptionsSnapshot.forEach(doc => {
       const sub = doc.data();
-      const amount = sub.amount || 0;
+      const amount = parseFloat(sub.amount) || 0;
       
       // Add to total revenue (all subscriptions, not just active)
       stats.totalRevenue += amount;
@@ -426,16 +434,19 @@ export async function getDashboardStats(req, res) {
     // Add revenue from renewal payments
     paymentsSnapshot.forEach(doc => {
       const payment = doc.data();
-      const amount = payment.amount || 0;
+      const amount = parseFloat(payment.amount) || 0;
       stats.totalRevenue += amount;
     });
 
     // Add revenue from employee payments (initial payments)
     employeePaymentsSnapshot.forEach(doc => {
       const payment = doc.data();
-      const amount = payment.amount || 0;
+      const amount = parseFloat(payment.amount) || 0;
       stats.totalRevenue += amount;
     });
+
+    // Ensure totalRevenue is a number (not string)
+    stats.totalRevenue = Number(stats.totalRevenue) || 0;
 
     res.json({
       success: true,

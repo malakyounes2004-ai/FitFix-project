@@ -421,9 +421,22 @@ const EmployeeManagement = () => {
                       </td>
                       <td className="py-4 px-4">
                         <p className="text-sm text-slate-400">
-                          {employee.createdAt?.toDate
-                            ? new Date(employee.createdAt.toDate()).toLocaleDateString()
-                            : 'N/A'}
+                          {(() => {
+                            if (!employee.createdAt) return 'N/A';
+                            
+                            // Handle Firestore Timestamp object
+                            if (employee.createdAt?.toDate && typeof employee.createdAt.toDate === 'function') {
+                              return new Date(employee.createdAt.toDate()).toLocaleDateString();
+                            }
+                            
+                            // Handle ISO string or Date object
+                            const date = new Date(employee.createdAt);
+                            if (!isNaN(date.getTime())) {
+                              return date.toLocaleDateString();
+                            }
+                            
+                            return 'N/A';
+                          })()}
                         </p>
                       </td>
                       <td className="py-4 px-4">

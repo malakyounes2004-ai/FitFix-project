@@ -56,14 +56,23 @@ const AdminSubscriptionPayments = () => {
           ease: 'power3.out'
         });
 
-        // Stats cards animation
+        // Stats cards animation - start transparent and fade in
         if (statsCardsRef.current) {
-          gsap.from(statsCardsRef.current.children, {
+          // Set initial state to transparent
+          gsap.set(statsCardsRef.current.children, {
             opacity: 0,
             y: 30,
-            stagger: 0.1,
-            duration: 0.5,
-            ease: 'power3.out',
+            scale: 0.9
+          });
+          
+          // Animate in with stagger
+          gsap.to(statsCardsRef.current.children, {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            stagger: 0.15,
+            duration: 0.7,
+            ease: 'back.out(1.2)',
             delay: 0.2
           });
         }
@@ -74,13 +83,13 @@ const AdminSubscriptionPayments = () => {
           y: 20,
           duration: 0.6,
           ease: 'power3.out',
-          delay: 0.4
+          delay: 0.8
         });
       });
 
       return () => ctx.revert();
     }
-  }, [isLoading]);
+  }, [isLoading, stats]);
 
   const loadData = async (showLoading = true) => {
     try {
@@ -103,11 +112,17 @@ const AdminSubscriptionPayments = () => {
       ]);
 
       setPayments(paymentsRes.data.data || []);
-      setStats(statsRes.data.data || {
-        totalPayments: 0,
-        totalRevenue: 0,
-        renewalCount: 0,
-        thisMonthRevenue: 0
+      
+      // Handle stats response - check both data.data and data
+      const statsData = statsRes.data?.data || statsRes.data || {};
+      console.log('[Frontend] Stats response:', statsRes.data);
+      console.log('[Frontend] Parsed stats:', statsData);
+      
+      setStats({
+        totalPayments: statsData.totalPayments || 0,
+        totalRevenue: statsData.totalRevenue || 0,
+        renewalCount: statsData.renewalCount || 0,
+        thisMonthRevenue: statsData.thisMonthRevenue || 0
       });
     } catch (error) {
       console.error('Failed to load subscription payments:', error);
@@ -205,7 +220,7 @@ const AdminSubscriptionPayments = () => {
           </header>
 
           {/* Stats Cards */}
-          <div ref={statsCardsRef} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div ref={statsCardsRef} className="stats-card-container grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {/* Total Revenue */}
             <div className={`rounded-3xl p-6 transition-all duration-300 hover:scale-[1.02] ${
               isDarkMode 
@@ -458,6 +473,11 @@ const AdminSubscriptionPayments = () => {
             opacity: 1;
             transform: translateY(0);
           }
+        }
+        
+        /* Ensure stats cards start transparent before GSAP animation */
+        .stats-card-container > * {
+          opacity: 0;
         }
       `}</style>
     </div>

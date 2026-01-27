@@ -3,10 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { GiMuscleUp, GiHeartBeats, GiWeightLiftingUp } from 'react-icons/gi';
-import { FiArrowRightCircle, FiCheckCircle, FiSend, FiLock } from 'react-icons/fi';
+import { FiArrowRightCircle, FiCheckCircle, FiX } from 'react-icons/fi';
 import { useNotification } from '../hooks/useNotification';
-import { auth, setupRecaptcha } from '../config/firebaseClient';
-import { signInWithPhoneNumber } from 'firebase/auth';
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || import.meta.env.RECAPTCHA_SITE_KEY || 'YOUR_RECAPTCHA_SITE_KEY';
 
@@ -58,13 +56,9 @@ const EmployeeSignup = () => {
   const [selectedPlan, setSelectedPlan] = useState('monthly');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState(['', '', '', '', '', '']);
-  const [verifyingOtp, setVerifyingOtp] = useState(false);
-  const [sendingOtp, setSendingOtp] = useState(false);
-  const [confirmationResult, setConfirmationResult] = useState(null);
   const [recaptchaScore, setRecaptchaScore] = useState(null);
+  const [cvFile, setCvFile] = useState(null);
+  const [cvFileName, setCvFileName] = useState('');
   const recaptchaLoaded = useRef(false);
   const { showNotification } = useNotification();
   const navigate = useNavigate();
@@ -143,6 +137,31 @@ const EmployeeSignup = () => {
     }
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Validate file type
+      if (file.type !== 'application/pdf') {
+        showNotification({ type: 'error', message: 'Please upload a PDF file only.' });
+        e.target.value = '';
+        return;
+      }
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        showNotification({ type: 'error', message: 'File size must be less than 10MB.' });
+        e.target.value = '';
+        return;
+      }
+      setCvFile(file);
+      setCvFileName(file.name);
+    }
+  };
+
+  const removeCvFile = () => {
+    setCvFile(null);
+    setCvFileName('');
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!formData.fullName.trim()) newErrors.fullName = 'Full name is required';
@@ -157,112 +176,6 @@ const EmployeeSignup = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const formatPhoneNumber = (phone) => {
-    // Remove all non-digits
-    const cleaned = phone.replace(/\D/g, '');
-    // Add country code if not present (assuming +1 for US, adjust as needed)
-    if (cleaned.length === 10) {
-      return `+1${cleaned}`;
-    }
-    if (cleaned.startsWith('1') && cleaned.length === 11) {
-      return `+${cleaned}`;
-    }
-    if (cleaned.startsWith('+')) {
-      return cleaned;
-    }
-    return `+${cleaned}`;
-  };
-
-  const handleSendOTP = async () => {
-    if (!formData.phoneNumber.trim()) {
-      showNotification({ type: 'error', message: 'Please enter a phone number first' });
-      return;
-    }
-
-    if (!auth) {
-      showNotification({ 
-        type: 'error', 
-        message: 'Phone verification is not available. Please configure Firebase settings.' 
-      });
-      return;
-    }
-
-    setSendingOtp(true);
-    try {
-      const formattedPhone = formatPhoneNumber(formData.phoneNumber);
-      const appVerifier = setupRecaptcha('recaptcha-container');
-      
-      const confirmation = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
-      setConfirmationResult(confirmation);
-      setOtpSent(true);
-      showNotification({ type: 'success', message: 'Verification code sent to your phone!' });
-    } catch (error) {
-      console.error('OTP send error:', error);
-      
-      // Handle specific Firebase errors with user-friendly messages
-      let errorMessage = 'Failed to send verification code. Please try again.';
-      
-      if (error.code === 'auth/operation-not-allowed') {
-        errorMessage = 'SMS verification is not enabled for your region. Please contact support or use a different phone number.';
-      } else if (error.code === 'auth/invalid-phone-number') {
-        errorMessage = 'Invalid phone number format. Please include country code (e.g., +1234567890).';
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many requests. Please wait a few minutes before trying again.';
-      } else if (error.code === 'auth/quota-exceeded') {
-        errorMessage = 'SMS quota exceeded. Please contact support.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      showNotification({ 
-        type: 'error', 
-        message: errorMessage
-      });
-    } finally {
-      setSendingOtp(false);
-    }
-  };
-
-  const handleOtpChange = (index, value) => {
-    if (!/^\d*$/.test(value)) return; // Only allow digits
-    
-    const newOtp = [...otpCode];
-    newOtp[index] = value.slice(-1); // Only take last character
-    
-    // Auto-focus next input
-    if (value && index < 5) {
-      const nextInput = document.getElementById(`otp-${index + 1}`);
-      if (nextInput) nextInput.focus();
-    }
-    
-    setOtpCode(newOtp);
-  };
-
-  const handleVerifyOTP = async () => {
-    const code = otpCode.join('');
-    if (code.length !== 6) {
-      showNotification({ type: 'error', message: 'Please enter the complete 6-digit code' });
-      return;
-    }
-
-    if (!confirmationResult) {
-      showNotification({ type: 'error', message: 'Please request a new verification code' });
-      return;
-    }
-
-    setVerifyingOtp(true);
-    try {
-      await confirmationResult.confirm(code);
-      setPhoneVerified(true);
-      showNotification({ type: 'success', message: 'Phone number verified successfully!' });
-    } catch (error) {
-      console.error('OTP verification error:', error);
-      showNotification({ type: 'error', message: 'Invalid verification code. Please try again.' });
-      setOtpCode(['', '', '', '', '', '']);
-    } finally {
-      setVerifyingOtp(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -272,30 +185,38 @@ const EmployeeSignup = () => {
       return;
     }
 
-    // Phone verification is optional - users can submit without verification
     setIsSubmitting(true);
     try {
       // Execute reCAPTCHA v3
       const score = await executeRecaptcha();
       
-      const payload = {
-        fullName: formData.fullName.trim(),
-        email: formData.email.trim().toLowerCase(),
-        phone: formData.phoneNumber.trim(),
-        address: formData.address.trim(),
-        country: formData.country.trim(),
-        city: formData.city.trim(),
-        gender: formData.gender,
-        dateOfBirth: formData.dateOfBirth,
-        notes: formData.notes || '',
-        selectedPlan,
-        amount: planOptions[selectedPlan].amount,
-        recaptchaScore: score,
-        phoneVerified: phoneVerified || false, // Use actual verification status
-        status: 'pending'
-      };
+      // Create FormData for multipart/form-data submission
+      const formDataToSend = new FormData();
+      formDataToSend.append('fullName', formData.fullName.trim());
+      formDataToSend.append('email', formData.email.trim().toLowerCase());
+      formDataToSend.append('phone', formData.phoneNumber.trim());
+      formDataToSend.append('address', formData.address.trim());
+      formDataToSend.append('country', formData.country.trim());
+      formDataToSend.append('city', formData.city.trim());
+      formDataToSend.append('gender', formData.gender);
+      formDataToSend.append('dateOfBirth', formData.dateOfBirth);
+      formDataToSend.append('notes', formData.notes || '');
+      formDataToSend.append('selectedPlan', selectedPlan);
+      formDataToSend.append('amount', planOptions[selectedPlan].amount.toString());
+      formDataToSend.append('recaptchaScore', score.toString());
+      formDataToSend.append('phoneVerified', 'false');
+      formDataToSend.append('status', 'pending');
+      
+      // Append CV file if provided
+      if (cvFile) {
+        formDataToSend.append('cv', cvFile);
+      }
 
-      await axios.post('http://localhost:3000/api/employee-requests', payload);
+      await axios.post('http://localhost:3000/api/employee-requests', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
 
       showNotification({
         type: 'success',
@@ -373,100 +294,20 @@ const EmployeeSignup = () => {
               </div>
             ))}
 
-            {/* Phone Number with OTP Verification */}
-            <div className="space-y-3">
-              <div className="relative">
-                <input
-                  type="tel"
-                  name="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={handleChange}
-                  disabled={phoneVerified}
-                  className={`w-full bg-black/30 border ${errors.phoneNumber ? 'border-rose-500/80' : phoneVerified ? 'border-emerald-500/50' : 'border-slate-800'} rounded-2xl px-4 pt-5 pb-2 text-base focus:outline-none focus:border-emerald-400 transition disabled:opacity-60`}
-                  placeholder=" "
-                />
-                <label className="absolute top-2 left-4 text-xs uppercase tracking-[0.3em] text-slate-500">
-                  Phone Number {auth && <span className="text-slate-600">(Optional verification)</span>}
-                </label>
-                {phoneVerified && (
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-emerald-400">
-                    <FiCheckCircle className="text-xl" />
-                    <span className="text-xs">Verified</span>
-                  </div>
-                )}
-                {errors.phoneNumber && <p className="text-rose-300 text-sm mt-1">{errors.phoneNumber}</p>}
-                {auth && !phoneVerified && (
-                  <p className="text-slate-400 text-xs mt-1">
-                    💡 Phone verification is optional. You can verify now or submit without verification.
-                  </p>
-                )}
-                {!auth && (
-                  <p className="text-slate-400 text-xs mt-1">
-                    💡 Phone verification is not available. You can still submit the form.
-                  </p>
-                )}
-              </div>
-
-              {!phoneVerified && auth && (
-                <div className="space-y-3">
-                  <p className="text-xs text-slate-400 text-center">
-                    Optional: Verify your phone number for added security
-                  </p>
-                  {!otpSent ? (
-                    <button
-                      type="button"
-                      onClick={handleSendOTP}
-                      disabled={sendingOtp || !formData.phoneNumber.trim()}
-                      className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold rounded-2xl py-3 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <FiSend className="text-lg" />
-                      {sendingOtp ? 'Sending...' : 'Verify Phone (Optional)'}
-                    </button>
-                  ) : (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="space-y-3"
-                    >
-                      <p className="text-sm text-slate-400 text-center">Enter the 6-digit code sent to your phone</p>
-                      <div className="flex gap-2 justify-center">
-                        {otpCode.map((digit, index) => (
-                          <input
-                            key={index}
-                            id={`otp-${index}`}
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={1}
-                            value={digit}
-                            onChange={(e) => handleOtpChange(index, e.target.value)}
-                            className="w-12 h-12 bg-black/30 border border-slate-800 rounded-xl text-center text-xl font-semibold focus:outline-none focus:border-emerald-400 transition"
-                          />
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={handleVerifyOTP}
-                        disabled={verifyingOtp || otpCode.join('').length !== 6}
-                        className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-black font-semibold rounded-2xl py-3 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <FiLock className="text-lg" />
-                        {verifyingOtp ? 'Verifying...' : 'Verify Code'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOtpSent(false);
-                          setOtpCode(['', '', '', '', '', '']);
-                          setConfirmationResult(null);
-                        }}
-                        className="w-full text-slate-400 hover:text-white text-sm transition"
-                      >
-                        Request new code
-                      </button>
-                    </motion.div>
-                  )}
-                </div>
-              )}
+            {/* Phone Number */}
+            <div className="relative">
+              <input
+                type="tel"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                className={`w-full bg-black/30 border ${errors.phoneNumber ? 'border-rose-500/80' : 'border-slate-800'} rounded-2xl px-4 pt-5 pb-2 text-base focus:outline-none focus:border-emerald-400 transition`}
+                placeholder=" "
+              />
+              <label className="absolute top-2 left-4 text-xs uppercase tracking-[0.3em] text-slate-500">
+                Phone Number
+              </label>
+              {errors.phoneNumber && <p className="text-rose-300 text-sm mt-1">{errors.phoneNumber}</p>}
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
@@ -512,6 +353,47 @@ const EmployeeSignup = () => {
                 placeholder=" "
               />
               <label className="absolute top-2 left-4 text-xs uppercase tracking-[0.3em] text-slate-500">Notes (optional)</label>
+            </div>
+
+            {/* CV Upload Field */}
+            <div className="relative">
+              <div className="w-full bg-black/30 border border-slate-800 rounded-2xl px-4 pt-6 pb-2 focus-within:border-emerald-400 transition">
+                <label className="absolute top-2 left-4 text-xs uppercase tracking-[0.3em] text-slate-500">
+                  CV Upload (PDF, optional)
+                </label>
+                <div className="mt-4 flex items-center gap-3">
+                  <input
+                    type="file"
+                    id="cv-upload"
+                    accept=".pdf,application/pdf"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="cv-upload"
+                    className="px-4 py-2 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-xl cursor-pointer hover:bg-emerald-500/30 transition text-sm font-semibold"
+                  >
+                    Choose File
+                  </label>
+                  {cvFileName && (
+                    <div className="flex-1 flex items-center justify-between">
+                      <span className="text-sm text-slate-300 truncate">{cvFileName}</span>
+                      <button
+                        type="button"
+                        onClick={removeCvFile}
+                        className="ml-2 text-rose-400 hover:text-rose-300 text-sm flex items-center gap-1"
+                        title="Remove CV"
+                      >
+                        <FiX className="text-sm" />
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                  {!cvFileName && (
+                    <span className="text-sm text-slate-500">No file selected</span>
+                  )}
+                </div>
+              </div>
             </div>
 
             <button
@@ -577,9 +459,6 @@ const EmployeeSignup = () => {
           </div>
         </div>
       </div>
-
-      {/* Hidden reCAPTCHA container */}
-      <div id="recaptcha-container"></div>
     </div>
   );
 };

@@ -108,6 +108,10 @@ export const getSubscriptionPaymentStats = async (req, res) => {
     
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    console.log(`[Stats] Processing ${paymentsSnapshot.size} payments`);
+    console.log(`[Stats] Start of month: ${startOfMonth.toISOString()}`);
+    console.log(`[Stats] Current time: ${now.toISOString()}`);
 
     paymentsSnapshot.docs.forEach(doc => {
       const data = doc.data();
@@ -119,20 +123,40 @@ export const getSubscriptionPaymentStats = async (req, res) => {
       }
 
       // Check if payment is from this month
-      const createdAt = data.createdAt?.toDate?.();
-      if (createdAt && createdAt >= startOfMonth) {
+      let createdAt = null;
+      if (data.createdAt) {
+        // Handle Firestore Timestamp
+        if (data.createdAt.toDate && typeof data.createdAt.toDate === 'function') {
+          createdAt = data.createdAt.toDate();
+        } 
+        // Handle ISO string
+        else if (typeof data.createdAt === 'string') {
+          createdAt = new Date(data.createdAt);
+        }
+        // Handle Date object
+        else if (data.createdAt instanceof Date) {
+          createdAt = data.createdAt;
+        }
+      }
+      
+      if (createdAt && !isNaN(createdAt.getTime()) && createdAt >= startOfMonth) {
         thisMonthRevenue += amount;
+        console.log(`[Stats] Payment from this month: $${amount} on ${createdAt.toISOString()}`);
       }
     });
 
+    const stats = {
+      totalPayments: paymentsSnapshot.size,
+      totalRevenue,
+      renewalCount,
+      thisMonthRevenue
+    };
+    
+    console.log('[Stats] Final stats:', stats);
+
     return res.json({
       success: true,
-      data: {
-        totalPayments: paymentsSnapshot.size,
-        totalRevenue,
-        renewalCount,
-        thisMonthRevenue
-      }
+      data: stats
     });
   } catch (error) {
     console.error('Get subscription payment stats error:', error);

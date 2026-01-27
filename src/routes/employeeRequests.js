@@ -4,14 +4,15 @@ import {
   createEmployeeRequest,
   getAllEmployeeRequests,
   approveEmployeeRequest,
-  rejectEmployeeRequest
+  rejectEmployeeRequest,
+  uploadCVMiddleware
 } from '../controllers/employeeRequestController.js';
 import { verifyAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Public route - anyone can submit a request
-router.post('/', createEmployeeRequest);
+// Public route - anyone can submit a request (with optional CV upload)
+router.post('/', uploadCVMiddleware, createEmployeeRequest);
 
 // Admin only routes
 router.get('/', verifyAdmin, getAllEmployeeRequests);
